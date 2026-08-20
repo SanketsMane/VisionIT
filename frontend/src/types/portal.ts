@@ -425,6 +425,6 @@ export interface PortalClientUser {
   memberships: {
     role: ProjectRole;
     roleLabel: string;
-    project: { id: string; title: string; code: string | null };
+    project: { id: string; title: string; code: string | null; clientId: string | null };
   }[];
 }

@@ -36,6 +36,31 @@ npx prisma migrate deploy
 npm run build >/dev/null
 echo "    dist/server.js $( [ -f dist/server.js ] && echo ok || echo MISSING )"
 
+step "Checking the PDF renderer"
+# Invoice PDFs are rendered by headless Chrome. Two things have to be true, and
+# both failed silently on first deploy: `unzip` must exist or the browser
+# download extracts to an empty folder, and a font carrying U+20B9 must be
+# installed or every rupee amount prints as a blank box.
+if ! command -v unzip >/dev/null 2>&1; then
+  echo "    installing unzip (required to extract the browser)"
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends unzip >/dev/null 2>&1 || true
+fi
+
+if ! node -e "require('puppeteer').executablePath()" >/dev/null 2>&1 ||
+   ! find /root/.cache/puppeteer -name chrome -type f -perm -u+x 2>/dev/null | grep -q .; then
+  echo "    Chrome missing — installing"
+  npx puppeteer browsers install chrome --install-deps 2>&1 | tail -2
+else
+  echo "    chrome present"
+fi
+
+if [ "$(fc-list ':charset=20b9' 2>/dev/null | wc -l)" -eq 0 ]; then
+  echo "    no font with the rupee sign — installing Noto"
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    fonts-noto-core fonts-dejavu-core >/dev/null 2>&1 && fc-cache -f >/dev/null 2>&1 || true
+fi
+echo "    fonts with U+20B9: $(fc-list ':charset=20b9' 2>/dev/null | wc -l)"
+
 step "Frontend: install and build"
 cd "$APP/frontend"
 npm ci --no-audit --no-fund >/dev/null

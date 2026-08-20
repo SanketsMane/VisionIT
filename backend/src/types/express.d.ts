@@ -15,6 +15,12 @@ declare global {
       userType: UserType;
       /** For CLIENT users: the workspace they were invited into. */
       ownerId: string | null;
+      /**
+       * Set when an internal user is impersonating this account: the id of the
+       * real person behind the request. Read from the signed token, so it can
+       * be trusted for audit entries.
+       */
+      impersonatedBy?: string;
     }
 
     interface Request {

@@ -11,6 +11,15 @@ interface AuthState {
   isReady: boolean;
   isAuthenticated: boolean;
 
+  /**
+   * Set while the studio is viewing the portal as a client. Deliberately not
+   * persisted: the impersonation token lives in memory only, so a reload falls
+   * back to the refresh cookie and lands on the studio session again. Keeping
+   * a flag in storage would leave a banner claiming an impersonation that the
+   * token no longer supports.
+   */
+  impersonation: { actorName: string; clientName: string } | null;
+
   restore: () => Promise<void>;
   login: (email: string, password: string) => Promise<User>;
   register: (payload: {
@@ -19,12 +28,15 @@ interface AuthState {
   }) => Promise<User>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
+  impersonate: (userId: string) => Promise<User>;
+  stopImpersonating: () => Promise<User>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isReady: false,
   isAuthenticated: false,
+  impersonation: null,
 
   /**
    * Exchanges the httpOnly refresh cookie for an access token on app boot.
@@ -34,10 +46,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   async restore() {
     try {
       const { user } = await authApi.restoreSession();
-      set({ user, isAuthenticated: true, isReady: true });
+      set({ user, isAuthenticated: true, isReady: true, impersonation: null });
     } catch {
       setAccessToken(null);
-      set({ user: null, isAuthenticated: false, isReady: true });
+      set({ user: null, isAuthenticated: false, isReady: true, impersonation: null });
     }
   },
 
@@ -61,12 +73,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // sign out, and leaving them "logged in" would be worse than a stale
       // server-side session that expires on its own.
       setAccessToken(null);
-      set({ user: null, isAuthenticated: false });
+      set({ user: null, isAuthenticated: false, impersonation: null });
     }
   },
 
   setUser(user) {
     set({ user, isAuthenticated: Boolean(user) });
+  },
+
+  async impersonate(userId) {
+    const data = await authApi.impersonate(userId);
+    set({
+      user: data.user,
+      isAuthenticated: true,
+      isReady: true,
+      impersonation: { actorName: data.actor.name, clientName: data.user.name },
+    });
+    return data.user;
+  },
+
+  async stopImpersonating() {
+    const { user } = await authApi.stopImpersonating();
+    set({ user, isAuthenticated: true, isReady: true, impersonation: null });
+    return user;
   },
 }));
 

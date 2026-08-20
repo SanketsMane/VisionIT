@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageHeader } from '@/components/shared/page-header';
 import { EmptyState, ErrorState } from '@/components/shared/empty-state';
 import { RoleBadge } from '@/components/shared/portal-badges';
+import { ViewAsButton } from '@/components/modules/portal/view-as-button';
 import { workspaceApi } from '@/lib/api/portal.api';
 import { queryKeys } from '@/lib/hooks/query-keys';
 import { formatDate, formatRelative } from '@/lib/format';
@@ -34,7 +35,7 @@ export default function PortalUsersPage() {
         {users.isError ? (
           <ErrorState onRetry={() => void users.refetch()} />
         ) : users.isLoading ? (
-          <TableSkeleton rows={5} columns={5} />
+          <TableSkeleton rows={5} columns={6} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={Users}
@@ -50,6 +51,7 @@ export default function PortalUsersPage() {
                 <TableHead>Projects</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead>Last active</TableHead>
+                <TableHead className="text-right">View as</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -89,6 +91,13 @@ export default function PortalUsersPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                     {user.lastLoginAt ? formatRelative(user.lastLoginAt) : 'Never signed in'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ViewAsButton
+                      userId={user.id}
+                      name={user.name}
+                      disabled={!user.isActive}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

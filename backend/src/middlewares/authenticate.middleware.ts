@@ -39,6 +39,9 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
     name: user.name,
     userType: user.userType,
     ownerId: user.ownerId,
+    // Carried through so anything the impersonator does is attributed to them
+    // in the audit trail, not to the client whose seat they are sitting in.
+    ...(payload.act ? { impersonatedBy: payload.act } : {}),
   };
   next();
 });

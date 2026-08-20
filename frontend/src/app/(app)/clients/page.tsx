@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Archive, Building2, Mail, MoreVertical, Pencil, Phone, Plus, Users } from 'lucide-react';
+import { Archive, Building2, Eye, Mail, MoreVertical, Pencil, Phone, Plus, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,9 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Field, FieldRow, FormSection } from '@/components/shared/form-field';
 import { clientsApi, type ClientListParams } from '@/lib/api/clients.api';
 import { queryKeys } from '@/lib/hooks/query-keys';
+import { workspaceApi } from '@/lib/api/portal.api';
+import { ViewAsDialog } from '@/components/modules/portal/view-as-button';
+import type { PortalClientUser } from '@/types/portal';
 import { useMutationHandlers } from '@/lib/hooks/use-mutation-toast';
 import type { Client, ClientStatus } from '@/types';
 
@@ -70,6 +73,23 @@ export default function ClientsPage() {
     onSuccess: () => onSuccess('Client archived', [queryKeys.clients.all, queryKeys.dashboard.overview]),
     onError: (error) => onError(error, 'Could not archive the client'),
   });
+
+  const portalUsers = useQuery({
+    queryKey: queryKeys.portal.clients,
+    queryFn: workspaceApi.clients,
+  });
+
+  /**
+   * A business can have several portal logins, or none. The link runs through
+   * project membership, so match on the project's clientId rather than trying
+   * to pair them up by name or email.
+   */
+  const portalUsersFor = (clientId: string) =>
+    (portalUsers.data ?? []).filter((portalUser) =>
+      portalUser.memberships.some((m) => m.project.clientId === clientId),
+    );
+
+  const [viewAs, setViewAs] = useState<PortalClientUser | null>(null);
 
   const items = clients.data?.items ?? [];
 
@@ -190,6 +210,20 @@ export default function ClientsPage() {
                         <DropdownMenuItem onSelect={() => router.push(`/invoices?new=1`)}>
                           New invoice
                         </DropdownMenuItem>
+                        {portalUsersFor(client.id).map((portalUser) => (
+                          <DropdownMenuItem
+                            key={portalUser.id}
+                            disabled={!portalUser.isActive}
+                            onSelect={(event) => {
+                              // Keep the menu mounted so the confirm dialog it
+                              // opens is not unmounted with it.
+                              event.preventDefault();
+                              setViewAs(portalUser);
+                            }}
+                          >
+                            <Eye /> View as {portalUser.name}
+                          </DropdownMenuItem>
+                        ))}
                         <ConfirmDialog
                           trigger={
                             <button type="button" className="relative flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-danger outline-none transition-colors hover:bg-danger-muted [&_svg]:size-3.5">
@@ -214,6 +248,14 @@ export default function ClientsPage() {
       </Card>
 
       <ClientFormDialog open={formOpen} onOpenChange={setFormOpen} client={editing} />
+
+      {/* One dialog for the whole page: the menu item that opens it unmounts
+          as soon as the dropdown closes. */}
+      <ViewAsDialog
+        target={viewAs}
+        open={Boolean(viewAs)}
+        onOpenChange={(next) => !next && setViewAs(null)}
+      />
     </div>
   );
 }

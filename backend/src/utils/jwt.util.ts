@@ -7,6 +7,13 @@ export interface AccessTokenPayload {
   email: string;
   role: string;
   type: 'access';
+  /**
+   * Set only on an impersonation token: the id of the internal user acting as
+   * `sub`. Named after the RFC 8693 "actor" claim. Its presence is what marks
+   * a session as impersonated — the client cannot fake it, because the token
+   * is signed.
+   */
+  act?: string;
 }
 
 export interface RefreshTokenPayload {
@@ -15,9 +22,17 @@ export interface RefreshTokenPayload {
   type: 'refresh';
 }
 
-export const signAccessToken = (payload: Omit<AccessTokenPayload, 'type'>): string =>
+/**
+ * `expiresIn` overrides the default lifetime — used by impersonation, which
+ * wants a longer single-shot session because it is issued without a refresh
+ * token and cannot silently renew.
+ */
+export const signAccessToken = (
+  payload: Omit<AccessTokenPayload, 'type'>,
+  expiresIn: string = env.JWT_ACCESS_EXPIRES_IN,
+): string =>
   jwt.sign({ ...payload, type: 'access' }, env.JWT_ACCESS_SECRET, {
-    expiresIn: env.JWT_ACCESS_EXPIRES_IN,
+    expiresIn,
     issuer: env.APP_NAME,
   } as SignOptions);
 

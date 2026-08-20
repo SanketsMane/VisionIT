@@ -22,6 +22,29 @@ export const authApi = {
    * so re-opening sign-up is a matter of restoring the page, not rewriting
    * the client.
    */
+  /**
+   * Starts a "view as client" session. The returned token replaces the studio
+   * one in memory; the refresh cookie is untouched, so the real session is
+   * still underneath and a reload returns to it.
+   */
+  async impersonate(userId: string) {
+    const data = await post<{
+      accessToken: string;
+      expiresIn: number;
+      user: User;
+      impersonating: true;
+      actor: { id: string; name: string };
+    }>(`/auth/impersonate/${userId}`);
+    setAccessToken(data.accessToken);
+    return data;
+  },
+
+  async stopImpersonating() {
+    const data = await post<AuthResponse>('/auth/stop-impersonating');
+    setAccessToken(data.accessToken);
+    return data;
+  },
+
   async register(payload: {
     name: string;
     email: string;

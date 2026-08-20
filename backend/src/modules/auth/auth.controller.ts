@@ -6,6 +6,7 @@ import { sendSuccess } from '@utils/api-response';
 import { ApiError } from '@utils/api-error';
 import { expiresInMs } from '@utils/jwt.util';
 import { AuthService } from './auth.service';
+import { ImpersonationService } from './impersonation.service';
 import type { AuthedRequest } from '@/types/common.types';
 import type { TokenPair } from './auth.types';
 
@@ -49,6 +50,29 @@ const sessionContext = (req: Request) => ({
 });
 
 export const AuthController = {
+  /**
+   * Starts a "view as client" session.
+   *
+   * The impersonation token is returned in the body only — no refresh cookie
+   * is set, so the studio user's own session survives untouched underneath and
+   * stopping is a matter of discarding a short-lived token.
+   */
+  impersonate: asyncHandler(async (req: Request, res: Response) => {
+    const { user, params } = req as AuthedRequest;
+    const data = await ImpersonationService.start(user, params.userId);
+    return sendSuccess(res, data, `You are now viewing the portal as ${data.user.name}`);
+  }),
+
+  stopImpersonating: asyncHandler(async (req: Request, res: Response) => {
+    const { user } = req as AuthedRequest;
+    const { tokens, ...rest } = await ImpersonationService.stop(user.impersonatedBy, {
+      userAgent: req.get('user-agent') ?? undefined,
+      ipAddress: req.ip,
+    });
+    setRefreshCookie(res, tokens.refreshToken);
+    return sendSuccess(res, { ...rest, ...bodyTokens(tokens) }, 'Back to your own account');
+  }),
+
   register: asyncHandler(async (req: Request, res: Response) => {
     const result = await AuthService.register(req.body, sessionContext(req));
     setRefreshCookie(res, result.tokens.refreshToken);

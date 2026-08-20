@@ -403,7 +403,9 @@ export const WorkspaceService = {
           where: { isActive: true },
           select: {
             role: true,
-            project: { select: { id: true, title: true, code: true } },
+            // clientId lets the Clients screen show which portal logins belong
+            // to a given business without a second round trip.
+            project: { select: { id: true, title: true, code: true, clientId: true } },
           },
         },
       },

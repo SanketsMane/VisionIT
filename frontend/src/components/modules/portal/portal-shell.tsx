@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ImpersonationBanner } from '@/components/layout/impersonation-banner';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore, type Theme } from '@/store/ui.store';
@@ -235,7 +236,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
+      <ImpersonationBanner />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
       <aside
         className={cn(
           'hidden shrink-0 border-r border-border bg-card transition-[width] duration-200 lg:block',
@@ -309,6 +312,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-y-auto scrollbar-slim">
           <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-6">{children}</div>
         </main>
+        </div>
       </div>
     </div>
   );
