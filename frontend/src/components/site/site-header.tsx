@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { useAuthStore } from '@/store/auth.store';
 import { homeFor } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -33,9 +34,6 @@ export function SiteHeader() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  // A route change with the menu still open leaves it covering the new page.
-  useEffect(() => setOpen(false), [pathname]);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -74,6 +72,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <ThemeToggle />
           {/* Rendered only once auth has settled — otherwise "Sign in" flashes
               for a moment on every load for someone who is already signed in. */}
           {isReady && isAuthenticated ? (
@@ -112,6 +111,10 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                // Closes the drawer on navigation. Doing this here rather than
+                // in an effect on `pathname` avoids a second render pass, and
+                // covers the case of tapping the link for the current page.
+                onClick={() => setOpen(false)}
                 className={cn(
                   'rounded-lg px-3 py-2.5 text-sm font-medium',
                   isActive(item.href)
@@ -122,10 +125,16 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
-            <div className="mt-2 flex gap-2 border-t border-border pt-3">
+            <div className="mt-2 flex items-center justify-between border-t border-border px-3 py-2.5">
+              <span className="text-sm font-medium text-muted-foreground">Theme</span>
+              <ThemeToggle align="end" />
+            </div>
+            <div className="flex gap-2 border-t border-border pt-3">
               {isReady && isAuthenticated ? (
                 <Button asChild className="flex-1">
-                  <Link href={homeFor(userType)}>Go to dashboard</Link>
+                  <Link href={homeFor(userType)} onClick={() => setOpen(false)}>
+                    Go to dashboard
+                  </Link>
                 </Button>
               ) : (
                 <>

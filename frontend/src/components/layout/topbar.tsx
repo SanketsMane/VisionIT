@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, Menu, Monitor, Moon, Plus, Settings, Sun, User as UserIcon } from 'lucide-react';
+import { LogOut, Menu, Plus, Settings, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/misc';
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth.store';
-import { useUiStore, type Theme } from '@/store/ui.store';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { NotificationBell } from './notification-bell';
 import { ALL_NAV_ITEMS } from './nav-config';
 
@@ -21,8 +21,6 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const theme = useUiStore((state) => state.theme);
-  const setTheme = useUiStore((state) => state.setTheme);
 
   const current = ALL_NAV_ITEMS.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
@@ -34,8 +32,6 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
     router.push('/login');
   };
 
-  const themeIcons: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
-  const ThemeIcon = themeIcons[theme];
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md">
@@ -68,18 +64,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Theme">
-            <ThemeIcon />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setTheme('light')}><Sun /> Light</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setTheme('dark')}><Moon /> Dark</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setTheme('system')}><Monitor /> System</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <ThemeToggle />
 
       <NotificationBell />
 

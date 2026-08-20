@@ -7,7 +7,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Boxes, Bug, ChevronLeft, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
-  MessageSquare, Monitor, Moon, PackageCheck, Receipt, ShoppingBag, Sun, Users,
+  MessageSquare, PackageCheck, Receipt, ShoppingBag, Users,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,8 +22,9 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { useAuthStore } from '@/store/auth.store';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { SITE } from '@/lib/site.config';
-import { useUiStore, type Theme } from '@/store/ui.store';
+import { useUiStore } from '@/store/ui.store';
 import { workspaceApi } from '@/lib/api/portal.api';
 import { chatApi } from '@/lib/api/chat.api';
 import { queryKeys } from '@/lib/hooks/query-keys';
@@ -59,8 +60,6 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const logout = useAuthStore((s) => s.logout);
   // Only website sign-ups get the Catalog tab.
   const isLead = user?.userType === 'LEAD';
-  const theme = useUiStore((s) => s.theme);
-  const setTheme = useUiStore((s) => s.setTheme);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 
@@ -133,8 +132,6 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const hasSingleProject = dashboard.data?.projects.length === 1;
 
 
-  const themeIcons: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
-  const ThemeIcon = themeIcons[theme];
 
   const handleLogout = async () => {
     await logout();
@@ -417,16 +414,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
           <NotificationBell />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Theme"><ThemeIcon /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setTheme('light')}><Sun /> Light</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setTheme('dark')}><Moon /> Dark</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setTheme('system')}><Monitor /> System</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ThemeToggle />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
