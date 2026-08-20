@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+/*
+ * ── Design tokens ───────────────────────────────────────────────────────────
+ * One palette, expressed as HSL channel triplets so Tailwind can compose them
+ * with opacity modifiers (`bg-primary/10`). Light is the base; the dark block
+ * only *reassigns* the same token names, so no component ever needs to know
+ * which theme it is rendering in.
+ */
+
+@theme {
+  --color-background: hsl(210 40% 98.5%);
+  --color-foreground: hsl(222 47% 11%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
+
+  --color-muted: hsl(210 40% 96%);
+  --color-muted-foreground: hsl(215 16% 47%);
+
+  --color-border: hsl(214 32% 91%);
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(212 100% 45%);
+
+  --color-primary: hsl(212 100% 45%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-primary-muted: hsl(212 100% 95%);
+
+  --color-secondary: hsl(210 40% 96%);
+  --color-secondary-foreground: hsl(222 47% 11%);
+
+  --color-accent: hsl(210 40% 94%);
+  --color-accent-foreground: hsl(222 47% 11%);
+
+  --color-success: hsl(142 71% 40%);
+  --color-success-foreground: hsl(0 0% 100%);
+  --color-success-muted: hsl(142 71% 95%);
+
+  --color-warning: hsl(38 92% 47%);
+  --color-warning-foreground: hsl(0 0% 100%);
+  --color-warning-muted: hsl(38 92% 95%);
+
+  --color-danger: hsl(0 72% 51%);
+  --color-danger-foreground: hsl(0 0% 100%);
+  --color-danger-muted: hsl(0 72% 96%);
+
+  --color-info: hsl(199 89% 48%);
+  --color-info-muted: hsl(199 89% 95%);
+
+  /* Categorical series for charts — ordered by perceptual distinctness so the
+     first N are always the most separable, whatever N turns out to be. */
+  --color-chart-1: hsl(212 100% 47%);
+  --color-chart-2: hsl(199 89% 48%);
+  --color-chart-3: hsl(142 71% 45%);
+  --color-chart-4: hsl(38 92% 50%);
+  --color-chart-5: hsl(280 65% 60%);
+  --color-chart-6: hsl(0 72% 60%);
+
+  --radius-card: 0.875rem;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --shadow-soft: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.06);
+  --shadow-raised: 0 4px 6px -1px rgb(16 24 40 / 0.06), 0 2px 4px -2px rgb(16 24 40 / 0.04);
+  --shadow-float: 0 12px 24px -6px rgb(16 24 40 / 0.10), 0 4px 8px -4px rgb(16 24 40 / 0.06);
+}
+
+/*
+ * Dark theme. Driven by an explicit `.dark` class on <html> rather than a media
+ * query, so the in-app toggle is authoritative and can override the OS setting.
+ */
+@layer base {
+  .dark {
+    --color-background: hsl(222 47% 7%);
+    --color-foreground: hsl(210 40% 96%);
+
+    --color-card: hsl(222 44% 10%);
+    --color-card-foreground: hsl(210 40% 96%);
+
+    --color-muted: hsl(217 33% 15%);
+    --color-muted-foreground: hsl(215 20% 62%);
+
+    --color-border: hsl(217 33% 18%);
+    --color-input: hsl(217 33% 20%);
+    --color-ring: hsl(212 100% 62%);
+
+    --color-primary: hsl(212 100% 62%);
+    --color-primary-foreground: hsl(222 47% 8%);
+    --color-primary-muted: hsl(212 60% 18%);
+
+    --color-secondary: hsl(217 33% 16%);
+    --color-secondary-foreground: hsl(210 40% 96%);
+
+    --color-accent: hsl(217 33% 18%);
+    --color-accent-foreground: hsl(210 40% 96%);
+
+    --color-success: hsl(142 65% 48%);
+    --color-success-muted: hsl(142 45% 15%);
+    --color-warning: hsl(38 92% 55%);
+    --color-warning-muted: hsl(38 50% 16%);
+    --color-danger: hsl(0 72% 60%);
+    --color-danger-muted: hsl(0 45% 17%);
+    --color-info: hsl(199 89% 56%);
+    --color-info-muted: hsl(199 50% 16%);
+
+    --color-chart-1: hsl(212 100% 64%);
+    --color-chart-2: hsl(199 89% 58%);
+    --color-chart-3: hsl(142 65% 52%);
+    --color-chart-4: hsl(38 92% 58%);
+    --color-chart-5: hsl(280 65% 68%);
+    --color-chart-6: hsl(0 72% 66%);
+
+    --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-raised: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-float: 0 12px 24px -6px rgb(0 0 0 / 0.5);
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Money, counts and dates line up in columns when digits share a width. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 9999px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Skeleton shimmer — respects reduced-motion via the block below. */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--color-muted) 25%,
+      color-mix(in srgb, var(--color-muted) 60%, var(--color-background)) 50%,
+      var(--color-muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  .animate-in-up {
+    animation: in-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes in-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Chrome/Safari paint a yellow autofill background that fights the theme. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-foreground);
+  -webkit-box-shadow: 0 0 0 1000px var(--color-card) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

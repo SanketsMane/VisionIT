@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+.next/
+out/
+build/
+
+# Environment — never commit real secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Working notes, specs and plaintext provider credentials. Kept local: this
+# folder holds API keys in the clear, and the rest is not part of the product.
+Docs/
+
+# Runtime artefacts
+logs/
+*.log
+npm-debug.log*
+uploads/*
+!uploads/brand/
+!uploads/.gitkeep
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Testing
+coverage/
+.nyc_output/
+
+# Turbo / caches
+.turbo/
+*.tsbuildinfo
