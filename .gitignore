@@ -17,7 +17,10 @@ build/
 
 # Working notes, specs and plaintext provider credentials. Kept local: this
 # folder holds API keys in the clear, and the rest is not part of the product.
-Docs/
+# Anchored with a leading slash so it matches ONLY the top-level folder: git
+# on macOS matches ignore rules case-insensitively, and an unanchored "Docs/"
+# also swallowed backend/src/docs/ (the Swagger spec).
+/Docs/
 
 # Runtime artefacts
 logs/
