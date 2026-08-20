@@ -27,14 +27,24 @@ echo "    $BEFORE -> $AFTER"
 
 step "Backend: install, migrate, build"
 cd "$APP/backend"
-npm ci --omit=dev --no-audit --no-fund >/dev/null 2>&1 || npm ci --no-audit --no-fund >/dev/null
-npm install --no-save typescript tsc-alias >/dev/null 2>&1 || true
+# The full install, dev dependencies included: the build compiles TypeScript,
+# so tsc, tsc-alias, tsx and every @types/* package are needed here. Installing
+# with --omit=dev leaves the compiler missing and `npm run build` dies on
+# "Could not find a declaration file for module 'express'".
+npm ci --no-audit --no-fund >/dev/null
 npx prisma generate >/dev/null
 # `migrate deploy` only applies committed migrations; it never prompts and
 # never drops anything, which is what makes it safe to run unattended.
 npx prisma migrate deploy
 npm run build >/dev/null
 echo "    dist/server.js $( [ -f dist/server.js ] && echo ok || echo MISSING )"
+
+# The service catalog is seed data, not migration data, so it is not applied
+# automatically: re-running the seed rewrites prices, and a rate edited in the
+# admin UI would silently revert on the next deploy. Seed once on a fresh
+# database, by hand:
+#     cd /root/visionitinfra/backend && npm run db:seed:services
+echo "    service catalog: seed manually with 'npm run db:seed:services' if this is a fresh database"
 
 step "Checking the PDF renderer"
 # Invoice PDFs are rendered by headless Chrome. Two things have to be true, and
