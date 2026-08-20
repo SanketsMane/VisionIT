@@ -27,6 +27,25 @@ const optionalNumber = () =>
  * Blank means "not configured", so it is normalised to absent here, once,
  * rather than defended against at each use site.
  */
+/**
+ * A boolean that actually reads the text.
+ *
+ * `z.coerce.boolean()` is `Boolean(value)`, so every non-empty string is true —
+ * `ENABLE_SWAGGER=false` enabled Swagger and `ALLOW_PUBLIC_REGISTRATION=false`
+ * left sign-up open. Env vars are always strings, so the only safe reading is
+ * an explicit one, and anything unrecognised is rejected at boot rather than
+ * silently becoming true.
+ */
+const boolFromEnv = (defaultValue: boolean) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === '') return defaultValue;
+    if (typeof value === 'boolean') return value;
+    const text = String(value).trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(text)) return true;
+    if (['false', '0', 'no', 'off'].includes(text)) return false;
+    return text; // falls through to the boolean check below and fails loudly
+  }, z.boolean());
+
 const optionalString = () =>
   z.preprocess(
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
@@ -74,7 +93,7 @@ const envSchema = z.object({
   // ---- Email --------------------------------------------------------------
   SMTP_HOST: optionalString(),
   SMTP_PORT: optionalNumber(),
-  SMTP_SECURE: z.coerce.boolean().default(true),
+  SMTP_SECURE: boolFromEnv(true),
   SMTP_USER: optionalString(),
   SMTP_PASSWORD: optionalString(),
   MAIL_FROM_NAME: z.string().default('Vision IT Infra'),
@@ -110,15 +129,15 @@ const envSchema = z.object({
 
   // ---- Ops ----------------------------------------------------------------
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
-  ENABLE_SWAGGER: z.coerce.boolean().default(true),
-  ENABLE_CRON: z.coerce.boolean().default(true),
+  ENABLE_SWAGGER: boolFromEnv(true),
+  ENABLE_CRON: boolFromEnv(true),
   /**
    * Public self-service sign-up. Off by default: this is a single-studio
    * platform, and an open /register lets anyone create a workspace on the
    * host. Clients never use it — they join through an invitation link, which
    * creates their account on the invite's own endpoint.
    */
-  ALLOW_PUBLIC_REGISTRATION: z.coerce.boolean().default(false),
+  ALLOW_PUBLIC_REGISTRATION: boolFromEnv(false),
 });
 
 const parsed = envSchema.safeParse(process.env);
