@@ -106,17 +106,23 @@ export function Hero() {
               aria-hidden
               className="absolute inset-x-8 -bottom-6 h-24 rounded-[2rem] bg-primary/12 blur-3xl"
             />
-            <div className="relative grid gap-4 sm:grid-cols-3">
+            <div
+              className={cn(
+                'relative mx-auto grid gap-4',
+                // Track count follows the number of covers, so two screenshots
+                // fill the row instead of sitting beside an empty third column.
+                shots.length === 1 ? 'max-w-2xl' : shots.length === 2 ? 'max-w-4xl sm:grid-cols-2' : 'sm:grid-cols-3',
+              )}
+            >
               {shots.map((item, index) => (
                 <Link
                   key={item.id}
                   href={`/work/${item.slug}`}
                   className={cn(
                     'group relative overflow-hidden rounded-2xl border border-border bg-card shadow-raised transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_-12px_rgb(16_24_40/0.18)]',
-                    // The middle card sits slightly proud on wide screens, so
-                    // the row reads as a composition rather than three tiles.
-                    index === 1 ? 'sm:-mt-6' : '',
-                    index === 2 ? 'hidden sm:block' : '',
+                    // With three cards the middle one sits proud, so the row
+                    // reads as a composition rather than three equal tiles.
+                    shots.length === 3 && index === 1 ? 'sm:-mt-6' : '',
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -126,11 +132,11 @@ export function Hero() {
                     loading={index === 0 ? 'eager' : 'lazy'}
                     className="aspect-[16/11] w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-4 pt-10">
-                    <p className="truncate text-sm font-semibold text-white">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/55 to-transparent p-4 pt-14">
+                    <p className="truncate text-sm font-semibold text-white drop-shadow">
                       {item.title.split('—')[0].trim()}
                     </p>
-                    <p className="truncate text-[11px] text-white/70">{item.industry}</p>
+                    <p className="truncate text-[11px] text-white/80">{item.industry}</p>
                   </div>
                 </Link>
               ))}
