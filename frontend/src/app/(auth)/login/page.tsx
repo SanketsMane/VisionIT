@@ -127,11 +127,10 @@ export default function LoginPage() {
         </Button>
       </form>
 
+      {/* Sign-up is closed: this is a single-studio platform, not a service
+          anyone can join. Clients get in through an invitation link instead. */}
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Don&apos;t have an account?{' '}
-        <Link href="/register" className="font-medium text-primary hover:underline">
-          Create one
-        </Link>
+        Been invited to a project? Open the invitation link we emailed you.
       </p>
     </div>
   );

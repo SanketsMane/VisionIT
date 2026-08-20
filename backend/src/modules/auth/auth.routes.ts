@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { env } from '@config/env';
+import { ApiError } from '@utils/api-error';
 import { authenticate, authLimiter, validate } from '@middlewares/index';
 import { AuthController } from './auth.controller';
 import {
@@ -18,7 +21,24 @@ const router = Router();
  * Public credential endpoints are rate limited; everything below
  * `authenticate` requires a valid access token.
  */
-router.post('/register', authLimiter, validate({ body: registerSchema }), AuthController.register);
+/**
+ * Sign-up is closed unless explicitly enabled.
+ *
+ * The guard lives on the route rather than in the UI: removing the form only
+ * hides the door, and the endpoint is what actually creates the account.
+ */
+const registrationGate = (_req: Request, _res: Response, next: NextFunction): void => {
+  if (env.ALLOW_PUBLIC_REGISTRATION) return next();
+  next(ApiError.forbidden('Sign-up is closed. Ask for an invitation link to join a project.'));
+};
+
+router.post(
+  '/register',
+  authLimiter,
+  registrationGate,
+  validate({ body: registerSchema }),
+  AuthController.register,
+);
 router.post('/login', authLimiter, validate({ body: loginSchema }), AuthController.login);
 router.post('/refresh', validate({ body: refreshSchema }), AuthController.refresh);
 router.post('/logout', AuthController.logout);

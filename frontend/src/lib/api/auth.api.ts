@@ -16,6 +16,12 @@ export interface Session {
 }
 
 export const authApi = {
+  /**
+   * No UI calls this: sign-up is closed and /register redirects to /login.
+   * Kept because the endpoint still exists behind ALLOW_PUBLIC_REGISTRATION,
+   * so re-opening sign-up is a matter of restoring the page, not rewriting
+   * the client.
+   */
   async register(payload: {
     name: string;
     email: string;

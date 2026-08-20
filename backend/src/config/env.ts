@@ -112,6 +112,13 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
   ENABLE_SWAGGER: z.coerce.boolean().default(true),
   ENABLE_CRON: z.coerce.boolean().default(true),
+  /**
+   * Public self-service sign-up. Off by default: this is a single-studio
+   * platform, and an open /register lets anyone create a workspace on the
+   * host. Clients never use it — they join through an invitation link, which
+   * creates their account on the invite's own endpoint.
+   */
+  ALLOW_PUBLIC_REGISTRATION: z.coerce.boolean().default(false),
 });
 
 const parsed = envSchema.safeParse(process.env);
