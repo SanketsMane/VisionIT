@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Bug, FolderOpen, Wallet } from 'lucide-react';
+import { ArrowRight, Boxes, Bug, FolderOpen, MessageSquare, ShoppingBag, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/misc';
@@ -25,6 +25,8 @@ import type { ProjectStatus } from '@/types';
 export default function PortalHomePage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  // Someone who signed up on the website rather than being invited to a project.
+  const isLead = user?.userType === 'LEAD';
 
   const dashboard = useQuery({
     queryKey: queryKeys.portal.myProjects,
@@ -67,15 +69,19 @@ export default function PortalHomePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Welcome back, ${user?.name?.split(' ')[0] ?? ''}`}
-        description="Everything happening on your projects, in one place."
+        title={`${isLead && !data?.projects.length ? 'Welcome' : 'Welcome back'}, ${user?.name?.split(' ')[0] ?? ''}`}
+        description={
+          isLead && !data?.projects.length
+            ? 'Browse our work, price up a service, or just tell us what you need.'
+            : 'Everything happening on your projects, in one place.'
+        }
       />
 
       {dashboard.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
-      ) : (
+      ) : isLead && !data?.projects.length ? null : (
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
             label="Active projects"
@@ -105,13 +111,56 @@ export default function PortalHomePage() {
           {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-52" />)}
         </div>
       ) : !data?.projects.length ? (
-        <Card>
-          <EmptyState
-            icon={FolderOpen}
-            title="No projects yet"
-            description="Once your project team invites you, it will appear here."
-          />
-        </Card>
+        isLead ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                href: '/portal/catalog',
+                icon: Boxes,
+                title: 'Browse our work',
+                body: 'Everything we have designed, built and delivered.',
+              },
+              {
+                href: '/portal/services',
+                icon: ShoppingBag,
+                title: 'Explore services',
+                body: 'Development, hosting, SMS, AI and marketing.',
+              },
+              {
+                href: '/portal/messages',
+                icon: MessageSquare,
+                title: 'Talk to us',
+                body: 'Send a brief or ask a question. It reaches us directly.',
+              },
+            ].map((card) => (
+              <Link
+                key={card.href}
+                href={card.href}
+                className="group flex flex-col rounded-xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-soft"
+              >
+                <span className="grid size-10 place-items-center rounded-lg bg-primary-muted text-primary">
+                  <card.icon className="size-5" />
+                </span>
+                <p className="mt-3 text-sm font-semibold">{card.title}</p>
+                <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground">
+                  {card.body}
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  Open
+                  <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <EmptyState
+              icon={FolderOpen}
+              title="No projects yet"
+              description="Once your project team invites you, it will appear here."
+            />
+          </Card>
+        )
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {data.projects.map((project) => {

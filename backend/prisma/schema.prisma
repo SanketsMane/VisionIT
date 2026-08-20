@@ -206,24 +206,34 @@ enum NotificationType {
 // ============================================================================
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         UserRole @default(OWNER)
-  avatarUrl    String?
-  phone        String?
-  designation  String?
-  timezone     String   @default("Asia/Kolkata")
-  locale       String   @default("en-IN")
-  isActive     Boolean  @default(true)
-  emailVerified Boolean @default(false)
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          UserRole @default(OWNER)
+  avatarUrl     String?
+  phone         String?
+  designation   String?
+  timezone      String   @default("Asia/Kolkata")
+  locale        String   @default("en-IN")
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
 
   /// INTERNAL users own a workspace; CLIENT users are portal guests who reach
   /// projects only through a ProjectMember row.
   userType UserType @default(INTERNAL)
-  /// For CLIENT users: the internal user whose workspace they were invited to.
+  /// For CLIENT and LEAD users: the internal user whose workspace they belong
+  /// to. A lead is attached to the workspace at sign-up so their enquiry, chat
+  /// and orders have somewhere to land before any project exists.
   ownerId  String?
+
+  /// LEAD users only. Captured at sign-up and never editable by the lead: the
+  /// answers are what make the funnel countable.
+  leadSource   LeadSource?
+  leadStatus   LeadStatus? @default(NEW)
+  leadCompany  String?
+  leadNote     String?     @db.Text
+  leadReferrer String?
 
   lastLoginAt          DateTime?
   passwordResetToken   String?   @unique
@@ -233,52 +243,55 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refreshTokens  RefreshToken[]
-  company        CompanyProfile?
-  clients        Client[]
-  projects       Project[]
-  invoices       Invoice[]
-  payments       Payment[]
-  expenses       Expense[]
-  accounts       Account[]
-  journalEntries JournalEntry[]
-  emailAccounts  EmailAccount[]
-  emailMessages  EmailMessage[]
-  emailTemplates EmailTemplate[]
-  aiGenerations  AiGeneration[]
-  notifications  Notification[]
-  activityLogs   ActivityLog[]
-  files          FileAsset[]
-  numberSequences NumberSequence[]
-  expenseCategories ExpenseCategory[]
+  refreshTokens       RefreshToken[]
+  company             CompanyProfile?
+  clients             Client[]
+  projects            Project[]
+  invoices            Invoice[]
+  payments            Payment[]
+  expenses            Expense[]
+  accounts            Account[]
+  journalEntries      JournalEntry[]
+  emailAccounts       EmailAccount[]
+  emailMessages       EmailMessage[]
+  emailTemplates      EmailTemplate[]
+  aiGenerations       AiGeneration[]
+  notifications       Notification[]
+  activityLogs        ActivityLog[]
+  files               FileAsset[]
+  numberSequences     NumberSequence[]
+  expenseCategories   ExpenseCategory[]
+  portfolioItems      PortfolioItem[]
+  contactMessages     ContactMessage[]  @relation("ContactOwner")
+  sentContactMessages ContactMessage[]  @relation("ContactSender")
 
   // ---- Client portal -------------------------------------------------------
-  owner          User?  @relation("WorkspaceGuests", fields: [ownerId], references: [id], onDelete: Cascade)
-  guests         User[] @relation("WorkspaceGuests")
+  owner  User?  @relation("WorkspaceGuests", fields: [ownerId], references: [id], onDelete: Cascade)
+  guests User[] @relation("WorkspaceGuests")
 
-  memberships       ProjectMember[]
-  sentInvitations   ProjectInvitation[] @relation("InvitationSender")
+  memberships        ProjectMember[]
+  sentInvitations    ProjectInvitation[] @relation("InvitationSender")
   acceptedInvitation ProjectInvitation[] @relation("InvitationAcceptor")
 
-  paymentRequests   PaymentRequest[] @relation("PaymentRequestSubmitter")
-  reviewedRequests  PaymentRequest[] @relation("PaymentRequestReviewer")
+  paymentRequests  PaymentRequest[] @relation("PaymentRequestSubmitter")
+  reviewedRequests PaymentRequest[] @relation("PaymentRequestReviewer")
 
-  reportedBugs      Bug[]         @relation("BugReporter")
-  assignedBugs      Bug[]         @relation("BugAssignee")
-  bugComments       BugComment[]
-  bugActivities     BugActivity[]
-  bugAttachments    BugAttachment[]
+  reportedBugs   Bug[]           @relation("BugReporter")
+  assignedBugs   Bug[]           @relation("BugAssignee")
+  bugComments    BugComment[]
+  bugActivities  BugActivity[]
+  bugAttachments BugAttachment[]
 
   // ---- Services --------------------------------------------------------------
-  services          Service[]
-  coupons           Coupon[]
-  serviceOrders     ServiceOrder[] @relation("OrderVendor")
-  placedOrders      ServiceOrder[] @relation("OrderClient")
-  reviewedOrders    ServiceOrder[] @relation("OrderReviewer")
-  orderMessages     ServiceOrderMessage[]
-  quoteRequests     QuoteRequest[] @relation("QuoteRequester")
-  ownedQuotes       QuoteRequest[] @relation("QuoteOwner")
-  assignedQuotes    QuoteRequest[] @relation("QuoteAssignee")
+  services       Service[]
+  coupons        Coupon[]
+  serviceOrders  ServiceOrder[]        @relation("OrderVendor")
+  placedOrders   ServiceOrder[]        @relation("OrderClient")
+  reviewedOrders ServiceOrder[]        @relation("OrderReviewer")
+  orderMessages  ServiceOrderMessage[]
+  quoteRequests  QuoteRequest[]        @relation("QuoteRequester")
+  ownedQuotes    QuoteRequest[]        @relation("QuoteOwner")
+  assignedQuotes QuoteRequest[]        @relation("QuoteAssignee")
 
   // ---- Chat ----------------------------------------------------------------
   conversationsCreated Conversation[]            @relation("ConversationCreator")
@@ -288,8 +301,8 @@ model User {
   uploadedDocuments ProjectDocument[]  @relation("DocumentUploader")
   documentDownloads DocumentDownload[]
 
-  deliveryAdminConfirmations  ProjectDelivery[] @relation("DeliveryAdminConfirmer")
-  deliveryClientConfirmations ProjectDelivery[] @relation("DeliveryClientConfirmer")
+  deliveryAdminConfirmations  ProjectDelivery[]       @relation("DeliveryAdminConfirmer")
+  deliveryClientConfirmations ProjectDelivery[]       @relation("DeliveryClientConfirmer")
   checklistCompletions        DeliveryChecklistItem[]
   publishedVersions           DeliveryVersion[]
 
@@ -303,14 +316,14 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   userAgent String?
   ipAddress String?
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -321,15 +334,15 @@ model RefreshToken {
 
 /// Business identity printed on invoices, quotes and outbound email signatures.
 model CompanyProfile {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  legalName   String
-  tradeName   String?
-  logoUrl     String?
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  legalName    String
+  tradeName    String?
+  logoUrl      String?
   signatureUrl String?
-  email       String?
-  phone       String?
-  website     String?
+  email        String?
+  phone        String?
+  website      String?
 
   addressLine1 String?
   addressLine2 String?
@@ -338,10 +351,10 @@ model CompanyProfile {
   postalCode   String?
   country      String  @default("India")
 
-  taxLabel     String? @default("GSTIN")
-  taxNumber    String?
-  panNumber    String?
-  cinNumber    String?
+  taxLabel  String? @default("GSTIN")
+  taxNumber String?
+  panNumber String?
+  cinNumber String?
 
   bankName          String?
   bankAccountName   String?
@@ -350,12 +363,12 @@ model CompanyProfile {
   bankSwift         String?
   upiId             String?
 
-  baseCurrency     String @default("INR")
-  fiscalYearStartMonth Int @default(4)
-  defaultTaxRate   Decimal @default(18) @db.Decimal(6, 3)
-  defaultPaymentTerms Int  @default(15)
-  invoiceFooterNote String?
-  defaultTerms      String?
+  baseCurrency         String  @default("INR")
+  fiscalYearStartMonth Int     @default(4)
+  defaultTaxRate       Decimal @default(18) @db.Decimal(6, 3)
+  defaultPaymentTerms  Int     @default(15)
+  invoiceFooterNote    String?
+  defaultTerms         String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -388,25 +401,25 @@ model Client {
   billingPostalCode   String?
   billingCountry      String?
 
-  paymentTermsDays Int     @default(15)
+  paymentTermsDays Int      @default(15)
   notes            String?
   avatarUrl        String?
   tags             String[] @default([])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contacts ClientContact[]
-  projects Project[]
-  invoices Invoice[]
-  emails   EmailMessage[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts      ClientContact[]
+  projects      Project[]
+  invoices      Invoice[]
+  emails        EmailMessage[]
+  serviceOrders ServiceOrder[]
 
   @@index([userId, status])
   @@index([userId, name])
   @@map("clients")
-  serviceOrders ServiceOrder[]
 }
 
 model ClientContact {
@@ -451,11 +464,11 @@ model Project {
   endDate      DateTime?
   deliveryDate DateTime?
 
-  contractValue Decimal? @db.Decimal(18, 2)
-  hourlyRate    Decimal? @db.Decimal(18, 2)
+  contractValue  Decimal? @db.Decimal(18, 2)
+  hourlyRate     Decimal? @db.Decimal(18, 2)
   estimatedHours Decimal? @db.Decimal(10, 2)
   loggedHours    Decimal  @default(0) @db.Decimal(10, 2)
-  currency      String   @default("INR")
+  currency       String   @default("INR")
 
   coverImageUrl String?
   galleryUrls   String[] @default([])
@@ -465,13 +478,13 @@ model Project {
   playStoreUrl  String?
   appStoreUrl   String?
 
-  featured    Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  tags        String[] @default([])
-  challenges  String?
-  solution    String?
-  outcome     String?
-  testimonial String?
+  featured          Boolean  @default(false)
+  sortOrder         Int      @default(0)
+  tags              String[] @default([])
+  challenges        String?
+  solution          String?
+  outcome           String?
+  testimonial       String?
   testimonialAuthor String?
 
   createdAt DateTime  @default(now())
@@ -496,6 +509,7 @@ model Project {
   activities      ProjectActivity[]
   support         ProjectSupport?
   conversations   Conversation[]
+  portfolioItems  PortfolioItem[]
 
   @@unique([userId, slug])
   @@unique([userId, code])
@@ -551,20 +565,20 @@ enum QuoteStatus {
 
 /// Something the studio sells. Distinct from Project, which is work already won.
 model Service {
-  id       String          @id @default(cuid())
-  userId   String
+  id           String          @id @default(cuid())
+  userId       String
   /// Stable, human-readable key used in public URLs.
-  slug     String
-  name     String
-  tagline  String?
-  description String?
-  category ServiceCategory
-  pricingModel PricingModel @default(QUOTE_ONLY)
+  slug         String
+  name         String
+  tagline      String?
+  description  String?
+  category     ServiceCategory
+  pricingModel PricingModel    @default(QUOTE_ONLY)
 
   /// Lucide icon name, so the catalog needs no image to look finished.
-  icon        String?
+  icon          String?
   coverImageUrl String?
-  accentColor String?
+  accentColor   String?
 
   features     String[] @default([])
   deliverables String[] @default([])
@@ -595,7 +609,7 @@ model Service {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   plans  ServicePlan[]
   quotes QuoteRequest[]
   orders ServiceOrder[]
@@ -616,10 +630,10 @@ model ServicePriceSlab {
   serviceId String
 
   /// Inclusive floor. The top band leaves `maxAmount` null for "and above".
-  minAmount Decimal  @db.Decimal(18, 2)
-  maxAmount Decimal? @db.Decimal(18, 2)
+  minAmount     Decimal  @db.Decimal(18, 2)
+  maxAmount     Decimal? @db.Decimal(18, 2)
   /// Cost of one unit at this band — ₹0.85 per SMS, and so on.
-  unitPrice Decimal  @db.Decimal(18, 4)
+  unitPrice     Decimal  @db.Decimal(18, 4)
   /// Free text because "8 Years" is a marketing promise, not a computed date.
   validityLabel String?
 
@@ -633,7 +647,7 @@ model ServicePriceSlab {
 
 /// A tier within a service — KVM 1, KVM 2, and so on.
 model ServicePlan {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   serviceId String
   name      String
   slug      String
@@ -644,10 +658,10 @@ model ServicePlan {
   /// possible spec would be mostly nulls.
   specs Json?
 
-  features   String[] @default([])
-  isPopular  Boolean  @default(false)
-  isActive   Boolean  @default(true)
-  sortOrder  Int      @default(0)
+  features  String[] @default([])
+  isPopular Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -670,11 +684,11 @@ model ServicePlanPrice {
   planId String
 
   /// 1, 12 or 24. Stored as a number so new terms need no migration.
-  termMonths Int
+  termMonths     Int
   /// What the client pays per month on this term.
-  price Decimal @db.Decimal(18, 2)
+  price          Decimal  @db.Decimal(18, 2)
   /// What it renews at once the introductory term ends.
-  renewalPrice Decimal? @db.Decimal(18, 2)
+  renewalPrice   Decimal? @db.Decimal(18, 2)
   /// The competitor or list price shown struck through, and where the headline
   /// discount percentage comes from.
   compareAtPrice Decimal? @db.Decimal(18, 2)
@@ -690,24 +704,24 @@ model ServicePlanPrice {
 
 /// An enquiry from the "Get a quote" button.
 model QuoteRequest {
-  id        String @id @default(cuid())
+  id         String  @id @default(cuid())
   /// The studio this was sent to.
-  userId    String
-  serviceId String?
-  planId    String?
+  userId     String
+  serviceId  String?
+  planId     String?
   termMonths Int?
 
-  name    String
-  email   String
-  phone   String?
-  company String?
-  message String?
-  budget  String?
+  name     String
+  email    String
+  phone    String?
+  company  String?
+  message  String?
+  budget   String?
   timeline String?
 
   status QuoteStatus @default(NEW)
   /// Where it came from: "public" or "portal".
-  source String @default("public")
+  source String      @default("public")
 
   /// The code the visitor had applied when they enquired, and what it saved
   /// them. Captured at submission because a coupon can expire or change value
@@ -799,7 +813,7 @@ model ServiceOrder {
   validityLabel String?
 
   /// What the client told us they need.
-  requirements String?
+  requirements  String?
   /// Where credentials and bills should be sent. Often a personal Gmail rather
   /// than the address they signed in with, so it is captured per order.
   deliveryEmail String
@@ -860,8 +874,8 @@ model ServiceOrderMessage {
   id      String @id @default(cuid())
   orderId String
 
-  authorId String
-  body     String
+  authorId   String
+  body       String
   /// Studio-only notes share the thread but never reach the client.
   isInternal Boolean @default(false)
 
@@ -900,11 +914,11 @@ model Coupon {
   code        String
   description String?
 
-  discountType  CouponDiscountType @default(PERCENT)
+  discountType      CouponDiscountType @default(PERCENT)
   /// Percent (0-100) or a rupee amount, depending on `discountType`.
-  discountValue Decimal      @db.Decimal(18, 2)
+  discountValue     Decimal            @db.Decimal(18, 2)
   /// Ceiling on a percent discount, so a big plan cannot give away too much.
-  maxDiscountAmount Decimal? @db.Decimal(18, 2)
+  maxDiscountAmount Decimal?           @db.Decimal(18, 2)
 
   scope      CouponScope       @default(ALL)
   categories ServiceCategory[] @default([])
@@ -971,8 +985,8 @@ model Conversation {
   /// Denormalised so the conversation list sorts and previews without a
   /// correlated subquery per row. Written in the same transaction as the
   /// message, so it cannot drift.
-  lastMessageAt      DateTime?
-  lastMessagePreview String?
+  lastMessageAt       DateTime?
+  lastMessagePreview  String?
   lastMessageSenderId String?
 
   isArchived Boolean @default(false)
@@ -1004,11 +1018,11 @@ model ConversationParticipant {
   /// participant: unread counts and "have they seen it?" both reduce to a
   /// timestamp comparison, and the table stays O(participants) instead of
   /// O(messages x participants).
-  lastReadAt      DateTime?
+  lastReadAt        DateTime?
   lastReadMessageId String?
   /// Separate mark so the UI can distinguish delivered from read, the way the
   /// two ticks do.
-  lastDeliveredAt DateTime?
+  lastDeliveredAt   DateTime?
 
   isMuted Boolean @default(false)
 
@@ -1111,10 +1125,10 @@ model ProjectSupport {
   /// Studio-only. Never leaves the internal API.
   notes        String?
 
-  isCancelled Boolean   @default(false)
-  cancelledAt DateTime?
+  isCancelled  Boolean   @default(false)
+  cancelledAt  DateTime?
   /// Number of times the term has been extended.
-  renewalCount Int @default(0)
+  renewalCount Int       @default(0)
 
   /// Which expiry reminders have already gone out, so the daily sweep can't
   /// mail the same warning twice. Values: "30", "7", "1", "expired".
@@ -1180,9 +1194,9 @@ model ProjectMilestone {
 // ============================================================================
 
 model Invoice {
-  id       String        @id @default(cuid())
-  userId   String
-  clientId String
+  id        String  @id @default(cuid())
+  userId    String
+  clientId  String
   projectId String?
 
   documentType DocumentType  @default(INVOICE)
@@ -1210,32 +1224,32 @@ model Invoice {
   taxInclusive Boolean @default(false)
   isInterState Boolean @default(false)
 
-  notes        String?
-  terms        String?
-  templateKey  String  @default("modern")
-  accentColor  String  @default("#0076FF")
-  publicToken  String? @unique
+  notes       String?
+  terms       String?
+  templateKey String  @default("modern")
+  accentColor String  @default("#0076FF")
+  publicToken String? @unique
 
   sentAt   DateTime?
   viewedAt DateTime?
   paidAt   DateTime?
 
-  isRecurring    Boolean   @default(false)
-  recurrenceRule String?
-  nextRunAt      DateTime?
+  isRecurring     Boolean   @default(false)
+  recurrenceRule  String?
+  nextRunAt       DateTime?
   parentInvoiceId String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client   Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  project  Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  items    InvoiceItem[]
-  payments Payment[]
-  emails   EmailMessage[]
-  journalEntries JournalEntry[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client          Client           @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  project         Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  items           InvoiceItem[]
+  payments        Payment[]
+  emails          EmailMessage[]
+  journalEntries  JournalEntry[]
   paymentRequests PaymentRequest[]
 
   @@unique([userId, number])
@@ -1250,17 +1264,17 @@ model InvoiceItem {
   id        String @id @default(cuid())
   invoiceId String
 
-  title       String
-  description String?
-  hsnSac      String?
-  quantity    Decimal @default(1) @db.Decimal(14, 3)
-  unit        String  @default("nos")
-  unitPrice   Decimal @default(0) @db.Decimal(18, 2)
+  title           String
+  description     String?
+  hsnSac          String?
+  quantity        Decimal @default(1) @db.Decimal(14, 3)
+  unit            String  @default("nos")
+  unitPrice       Decimal @default(0) @db.Decimal(18, 2)
   discountPercent Decimal @default(0) @db.Decimal(6, 3)
-  taxRate     Decimal @default(0) @db.Decimal(6, 3)
-  taxAmount   Decimal @default(0) @db.Decimal(18, 2)
-  lineTotal   Decimal @default(0) @db.Decimal(18, 2)
-  sortOrder   Int     @default(0)
+  taxRate         Decimal @default(0) @db.Decimal(6, 3)
+  taxAmount       Decimal @default(0) @db.Decimal(18, 2)
+  lineTotal       Decimal @default(0) @db.Decimal(18, 2)
+  sortOrder       Int     @default(0)
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -1337,12 +1351,12 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent   Account?      @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children Account[]     @relation("AccountHierarchy")
-  lines    JournalLine[]
-  payments Payment[]
-  expensesPaidFrom Expense[] @relation("ExpensePaymentAccount")
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent           Account?      @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children         Account[]     @relation("AccountHierarchy")
+  lines            JournalLine[]
+  payments         Payment[]
+  expensesPaidFrom Expense[]     @relation("ExpensePaymentAccount")
 
   @@unique([userId, code])
   @@index([userId, type])
@@ -1379,13 +1393,13 @@ model JournalEntry {
 }
 
 model JournalLine {
-  id        String  @id @default(cuid())
-  entryId   String
-  accountId String
-  debit     Decimal @default(0) @db.Decimal(18, 2)
-  credit    Decimal @default(0) @db.Decimal(18, 2)
+  id          String  @id @default(cuid())
+  entryId     String
+  accountId   String
+  debit       Decimal @default(0) @db.Decimal(18, 2)
+  credit      Decimal @default(0) @db.Decimal(18, 2)
   description String?
-  sortOrder Int     @default(0)
+  sortOrder   Int     @default(0)
 
   entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   account Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
@@ -1396,12 +1410,12 @@ model JournalLine {
 }
 
 model ExpenseCategory {
-  id        String  @id @default(cuid())
-  userId    String
-  name      String
-  slug      String
-  color     String?
-  isActive  Boolean @default(true)
+  id       String  @id @default(cuid())
+  userId   String
+  name     String
+  slug     String
+  color    String?
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1414,34 +1428,34 @@ model ExpenseCategory {
 }
 
 model Expense {
-  id         String  @id @default(cuid())
-  userId     String
-  categoryId String?
-  projectId  String?
+  id                String  @id @default(cuid())
+  userId            String
+  categoryId        String?
+  projectId         String?
   paidFromAccountId String?
 
   vendor      String
   description String?
   date        DateTime
-  amount      Decimal  @db.Decimal(18, 2)
-  taxAmount   Decimal  @default(0) @db.Decimal(18, 2)
-  total       Decimal  @db.Decimal(18, 2)
-  currency    String   @default("INR")
+  amount      Decimal       @db.Decimal(18, 2)
+  taxAmount   Decimal       @default(0) @db.Decimal(18, 2)
+  total       Decimal       @db.Decimal(18, 2)
+  currency    String        @default("INR")
   method      PaymentMethod @default(BANK_TRANSFER)
   reference   String?
   receiptUrl  String?
-  billable    Boolean  @default(false)
-  reimbursed  Boolean  @default(false)
+  billable    Boolean       @default(false)
+  reimbursed  Boolean       @default(false)
   notes       String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  project  Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  paidFrom Account?         @relation("ExpensePaymentAccount", fields: [paidFromAccountId], references: [id], onDelete: SetNull)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  project        Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  paidFrom       Account?         @relation("ExpensePaymentAccount", fields: [paidFromAccountId], references: [id], onDelete: SetNull)
   journalEntries JournalEntry[]
 
   @@index([userId, date])
@@ -1462,10 +1476,10 @@ model EmailAccount {
   fromEmail String
   replyTo   String?
 
-  smtpHost   String?
-  smtpPort   Int?
-  smtpSecure Boolean @default(true)
-  smtpUser   String?
+  smtpHost        String?
+  smtpPort        Int?
+  smtpSecure      Boolean @default(true)
+  smtpUser        String?
   /// AES-256-GCM encrypted at rest — never returned by the API.
   smtpPasswordEnc String?
   apiKeyEnc       String?
@@ -1499,14 +1513,14 @@ model EmailMessage {
   bodyHtml     String
   bodyText     String?
 
-  status       EmailStatus  @default(DRAFT)
-  purpose      EmailPurpose @default(CUSTOM)
+  status            EmailStatus  @default(DRAFT)
+  purpose           EmailPurpose @default(CUSTOM)
   providerMessageId String?
-  errorMessage String?
-  attempts     Int          @default(0)
+  errorMessage      String?
+  attempts          Int          @default(0)
 
-  aiGenerated  Boolean @default(false)
-  attachments  Json?
+  aiGenerated Boolean @default(false)
+  attachments Json?
 
   scheduledAt DateTime?
   sentAt      DateTime?
@@ -1551,13 +1565,13 @@ model AiGeneration {
   userId         String
   emailMessageId String? @unique
 
-  feature      String
-  model        String
-  purpose      EmailPurpose?
-  tone         AiTone?
-  promptInput  Json
-  outputText   String?
-  outputJson   Json?
+  feature     String
+  model       String
+  purpose     EmailPurpose?
+  tone        AiTone?
+  promptInput Json
+  outputText  String?
+  outputJson  Json?
 
   promptTokens     Int     @default(0)
   completionTokens Int     @default(0)
@@ -1601,13 +1615,13 @@ model FileAsset {
 }
 
 model Notification {
-  id      String           @id @default(cuid())
-  userId  String
-  type    NotificationType
-  title   String
-  body    String?
-  link    String?
-  isRead  Boolean          @default(false)
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+  title  String
+  body   String?
+  link   String?
+  isRead Boolean          @default(false)
 
   createdAt DateTime @default(now())
 
@@ -1647,6 +1661,28 @@ model ActivityLog {
 enum UserType {
   INTERNAL
   CLIENT
+  /// Signed up through the public site. Reaches the portal but owns no project
+  /// until someone adds them to one; sees the work catalog, which CLIENT does
+  /// not. Never mintable through any admin-creating path.
+  LEAD
+}
+
+/// Where a lead says they heard about us. Kept as an enum rather than free text
+/// so the numbers can actually be counted at the end of a quarter.
+enum LeadSource {
+  FREELANCER
+  GOOGLE
+  SOCIAL_MEDIA
+  REFERRAL
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  ARCHIVED
 }
 
 /// Permissions are derived from these, never stored per-user.
@@ -1761,6 +1797,92 @@ enum EmailLogStatus {
 
 // ---------------------------------------------------------------- membership
 
+/// A piece of work shown publicly and in the lead catalog.
+///
+/// Deliberately NOT a view over `Project`: a project row carries the client,
+/// the money and the internal notes, and the whole point of this table is that
+/// none of that can leak. What goes public is written here on purpose.
+model PortfolioItem {
+  id      String @id @default(cuid())
+  ownerId String
+
+  title   String
+  slug    String
+  /// One line under the title on the card.
+  tagline String
+  /// The write-up on the detail page. Markdown-ish plain text.
+  summary String @db.Text
+
+  category ProjectCategory @default(WEB_DEVELOPMENT)
+  /// Free-form second label: "Logistics", "Fintech", "Retail".
+  industry String?
+
+  /// Where it lives, if it is public. Absent for work that cannot be linked.
+  liveUrl    String?
+  coverImage String?
+  /// Ordered list of screenshots, as stored file keys or absolute URLs.
+  gallery    String[] @default([])
+  techStack  String[] @default([])
+  highlights String[] @default([])
+
+  /// Month the work shipped. Only the year and month are ever rendered.
+  deliveredAt DateTime?
+
+  /// The client is never named unless they have agreed to it, so both of these
+  /// default to hidden and have to be filled in deliberately.
+  clientLabel String?
+  testimonial String? @db.Text
+
+  isPublished Boolean @default(false)
+  isFeatured  Boolean @default(false)
+  sortOrder   Int     @default(0)
+  viewCount   Int     @default(0)
+
+  /// The project this was written from, kept only so the studio can find its
+  /// way back. Never exposed on any public or lead-facing response.
+  sourceProjectId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  sourceProject Project? @relation(fields: [sourceProjectId], references: [id], onDelete: SetNull)
+
+  @@unique([ownerId, slug])
+  @@index([ownerId, isPublished, sortOrder])
+  @@index([ownerId, category])
+  @@map("portfolio_items")
+}
+
+/// An enquiry from the public contact form. Separate from QuoteRequest, which
+/// is always about a specific service; this is "someone typed something into
+/// the website".
+model ContactMessage {
+  id      String @id @default(cuid())
+  ownerId String
+
+  name    String
+  email   String
+  phone   String?
+  company String?
+  subject String?
+  message String  @db.Text
+
+  source    LeadSource?
+  /// Set when the sender was signed in, so replies can thread to the account.
+  userId    String?
+  isRead    Boolean     @default(false)
+  handledAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  owner User  @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  user  User? @relation("ContactSender", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, isRead, createdAt])
+  @@map("contact_messages")
+}
+
 model ProjectMember {
   id        String      @id @default(cuid())
   projectId String
@@ -1816,7 +1938,7 @@ model ProjectInvitation {
 /// nothing posts to the ledger until an admin approves it, at which point a
 /// real Payment is created through the normal invoice settlement path.
 model PaymentRequest {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   projectId String
   invoiceId String?
 
@@ -1912,10 +2034,10 @@ model Bug {
 }
 
 model BugComment {
-  id       String  @id @default(cuid())
-  bugId    String
-  authorId String
-  body     String
+  id         String  @id @default(cuid())
+  bugId      String
+  authorId   String
+  body       String
   /// Internal comments must never reach a client route. Enforced in the
   /// service layer, not just hidden in the UI.
   isInternal Boolean @default(false)
@@ -1931,7 +2053,7 @@ model BugComment {
 }
 
 model BugAttachment {
-  id           String  @id @default(cuid())
+  id           String @id @default(cuid())
   bugId        String
   uploadedById String
   storageKey   String
@@ -1951,13 +2073,13 @@ model BugAttachment {
 /// Append-only timeline for a bug. Field/old/new make status changes readable
 /// without diffing snapshots.
 model BugActivity {
-  id       String  @id @default(cuid())
-  bugId    String
-  actorId  String?
-  action   String
-  field    String?
-  oldValue String?
-  newValue String?
+  id         String  @id @default(cuid())
+  bugId      String
+  actorId    String?
+  action     String
+  field      String?
+  oldValue   String?
+  newValue   String?
   /// Activity on internal-only changes is hidden from client routes.
   isInternal Boolean @default(false)
 
@@ -1973,14 +2095,14 @@ model BugActivity {
 // ----------------------------------------------------------------- documents
 
 model ProjectDocument {
-  id          String             @id @default(cuid())
-  projectId   String
-  name        String
-  description String?
-  category    DocumentCategory   @default(OTHER)
-  version     String?
-  visibility  DocumentVisibility @default(ADMIN_ONLY)
-  allowDownload Boolean          @default(true)
+  id            String             @id @default(cuid())
+  projectId     String
+  name          String
+  description   String?
+  category      DocumentCategory   @default(OTHER)
+  version       String?
+  visibility    DocumentVisibility @default(ADMIN_ONLY)
+  allowDownload Boolean            @default(true)
 
   /// Path inside private storage. Files are streamed through an authorised
   /// endpoint — they are never served from the public /uploads route.
@@ -2031,20 +2153,20 @@ model ProjectDelivery {
   sourceCodeMethod SourceCodeMethod @default(NOT_CHOSEN)
 
   // GitHub handover
-  githubRepoUrl    String?
-  githubOwner      String?
-  githubUsername   String?
-  handoverStatus   HandoverStatus @default(NOT_STARTED)
-  transferNotes    String?
-  transferredAt    DateTime?
+  githubRepoUrl  String?
+  githubOwner    String?
+  githubUsername String?
+  handoverStatus HandoverStatus @default(NOT_STARTED)
+  transferNotes  String?
+  transferredAt  DateTime?
 
   // ZIP handover — private storage only.
-  zipStorageKey String?
-  zipFilename   String?
-  zipSizeBytes  Int?
-  zipChecksum   String?
-  zipVersion    String?
-  zipDownloadCount Int @default(0)
+  zipStorageKey    String?
+  zipFilename      String?
+  zipSizeBytes     Int?
+  zipChecksum      String?
+  zipVersion       String?
+  zipDownloadCount Int     @default(0)
 
   releaseNotes String?
 
@@ -2101,8 +2223,8 @@ model DeliveryVersion {
   checksum   String?
   githubUrl  String?
 
-  publishedById String
-  publishedAt   DateTime  @default(now())
+  publishedById     String
+  publishedAt       DateTime  @default(now())
   clientConfirmedAt DateTime?
 
   delivery    ProjectDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
@@ -2166,13 +2288,13 @@ model ProjectActivity {
 /// Delivery record for every notification email, so an admin can answer
 /// "did the client actually get told?" without guessing.
 model EmailLog {
-  id        String         @id @default(cuid())
-  userId    String?
-  projectId String?
-  event     String
-  toAddress String
-  subject   String
-  status    EmailLogStatus @default(QUEUED)
+  id                String         @id @default(cuid())
+  userId            String?
+  projectId         String?
+  event             String
+  toAddress         String
+  subject           String
+  status            EmailLogStatus @default(QUEUED)
   providerMessageId String?
   errorMessage      String?
   sentAt            DateTime?

@@ -63,7 +63,7 @@ export default function QuotesPage() {
         description="Quote requests from your services page."
         actions={
           <Button asChild variant="ghost">
-            <Link href="/services"><ArrowLeft /> Services</Link>
+            <Link href="/studio/services"><ArrowLeft /> Services</Link>
           </Button>
         }
       />

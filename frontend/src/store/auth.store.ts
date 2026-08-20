@@ -22,6 +22,8 @@ interface AuthState {
 
   restore: () => Promise<void>;
   login: (email: string, password: string) => Promise<User>;
+  /** Adopts a session the API already issued, e.g. after lead sign-up. */
+  applySession: (user: User, accessToken?: string) => void;
   register: (payload: {
     name: string; email: string; password: string;
     companyName?: string; phone?: string;
@@ -63,6 +65,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = await authApi.register(payload);
     set({ user, isAuthenticated: true, isReady: true });
     return user;
+  },
+
+  applySession(user, accessToken) {
+    // The token is already in the client module when the API helper set it;
+    // passing it here covers callers that post directly.
+    if (accessToken) setAccessToken(accessToken);
+    set({ user, isAuthenticated: true, isReady: true, impersonation: null });
   },
 
   async logout() {

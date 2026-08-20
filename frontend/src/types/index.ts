@@ -53,7 +53,7 @@ export interface User {
   email: string;
   role: UserRole;
   /** INTERNAL users see the studio app; CLIENT users see the portal. */
-  userType: 'INTERNAL' | 'CLIENT';
+  userType: 'INTERNAL' | 'CLIENT' | 'LEAD';
   ownerId: string | null;
   avatarUrl: string | null;
   phone: string | null;

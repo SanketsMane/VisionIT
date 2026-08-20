@@ -47,5 +47,15 @@ export const cleanParams = <T extends object>(params: T): Partial<T> => {
 };
 
 /** Where a user belongs after signing in, based on which app they're part of. */
-export const homeFor = (userType?: 'INTERNAL' | 'CLIENT' | null): string =>
-  userType === 'CLIENT' ? '/portal' : '/dashboard';
+/**
+ * Where a signed-in user belongs.
+ *
+ * LEAD lands on the catalog rather than `/portal`: a lead has no project yet,
+ * so the portal root would greet them with an empty state, while the catalog is
+ * the thing they signed up to look at.
+ */
+export const homeFor = (userType?: 'INTERNAL' | 'CLIENT' | 'LEAD' | null): string => {
+  if (userType === 'LEAD') return '/portal/catalog';
+  if (userType === 'CLIENT') return '/portal';
+  return '/dashboard';
+};

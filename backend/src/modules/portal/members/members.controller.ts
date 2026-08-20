@@ -48,6 +48,31 @@ export const MembersController = {
     const data = await MembersService.addInternal(projectId, req.body.userId, user.id);
     return sendCreated(res, data, 'Team member assigned');
   }),
+
+  /** Type-ahead over leads and clients who are not already on the project. */
+  searchAttachable: asyncHandler(async (req: Request, res: Response) => {
+    const { user } = req as AuthedRequest;
+    const { projectId } = getProjectAccess(req);
+    const data = await MembersService.searchAttachable(
+      projectId,
+      user.id,
+      String(req.query.q ?? ''),
+    );
+    return sendSuccess(res, data);
+  }),
+
+  attachExisting: asyncHandler(async (req: Request, res: Response) => {
+    const { user } = req as AuthedRequest;
+    const { projectId } = getProjectAccess(req);
+    const data = await MembersService.attachExisting(
+      projectId,
+      user.id,
+      req.body.userId,
+      req.body.role,
+      user.id,
+    );
+    return sendCreated(res, data, 'Added to the project');
+  }),
 };
 
 export default MembersController;

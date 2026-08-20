@@ -67,10 +67,10 @@ export default function ServicesPage() {
         actions={
           <>
             <Button asChild variant="outline">
-              <Link href="/services/orders"><PackageCheck /> Orders</Link>
+              <Link href="/studio/services/orders"><PackageCheck /> Orders</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/services/quotes"><Inbox /> Enquiries</Link>
+              <Link href="/studio/services/quotes"><Inbox /> Enquiries</Link>
             </Button>
           </>
         }

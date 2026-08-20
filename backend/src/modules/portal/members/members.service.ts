@@ -1,7 +1,9 @@
 import { ProjectRole, UserType } from '@prisma/client';
 import { prisma } from '@config/database';
 import { ApiError } from '@utils/api-error';
+import { env } from '@config/env';
 import { recordActivity } from '@modules/portal/portal.activity';
+import { NotificationService } from '@modules/notifications/notification.service';
 import {
   CLIENT_ASSIGNABLE_ROLES,
   ROLE_DESCRIPTIONS,
@@ -196,6 +198,128 @@ export const MembersService = {
       entityId: member.id,
       summary: `${user.name} was assigned to the project`,
       isInternal: true,
+    });
+
+    return member;
+  },
+
+  /**
+   * People the studio can drop straight into a project.
+   *
+   * Leads who signed up on the website already have a working account, so
+   * adding one is an attach, not an invitation — no email round-trip, no token
+   * to expire. Existing members are filtered out rather than shown greyed: a
+   * name in a search result that cannot be picked reads as a bug.
+   */
+  async searchAttachable(projectId: string, ownerId: string, term: string) {
+    const query = term.trim();
+    if (query.length < 2) return [];
+
+    const already = await prisma.projectMember.findMany({
+      where: { projectId, isActive: true },
+      select: { userId: true },
+    });
+    const taken = already.map((row) => row.userId);
+
+    return prisma.user.findMany({
+      where: {
+        ownerId,
+        userType: { in: [UserType.LEAD, UserType.CLIENT] },
+        isActive: true,
+        ...(taken.length ? { id: { notIn: taken } } : {}),
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+          { leadCompany: { contains: query, mode: 'insensitive' } },
+          { phone: { contains: query } },
+        ],
+      },
+      select: {
+        id: true, name: true, email: true, phone: true, avatarUrl: true,
+        userType: true, leadCompany: true, leadSource: true, leadStatus: true,
+      },
+      orderBy: [{ userType: 'asc' }, { name: 'asc' }],
+      take: 10,
+    });
+  },
+
+  /**
+   * Attach an existing lead or client account to a project.
+   *
+   * Scoped to `ownerId` so one workspace cannot pull another's users in, and
+   * restricted to the client-assignable roles so this path can never hand out
+   * an internal role.
+   */
+  async attachExisting(
+    projectId: string,
+    ownerId: string,
+    userId: string,
+    role: ProjectRole,
+    actorId: string,
+  ) {
+    if (!CLIENT_ASSIGNABLE_ROLES.includes(role)) {
+      throw ApiError.badRequest('That role cannot be given to a portal user');
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        ownerId,
+        userType: { in: [UserType.LEAD, UserType.CLIENT] },
+        isActive: true,
+      },
+      select: { id: true, name: true, email: true, userType: true },
+    });
+    if (!user) throw ApiError.badRequest('That account does not exist in your workspace');
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: ownerId },
+      select: { id: true, title: true },
+    });
+    if (!project) throw ApiError.notFound('Project not found');
+
+    const actor = await prisma.user.findUnique({
+      where: { id: actorId },
+      select: { name: true },
+    });
+
+    const member = await prisma.projectMember.upsert({
+      where: { projectId_userId: { projectId, userId } },
+      update: { isActive: true, role },
+      create: { projectId, userId, role, invitedById: actorId },
+      select: memberSelect,
+    });
+
+    // A lead who now has a project is no longer just a lead. The account type
+    // stays LEAD — that is what keeps their Catalog tab — but the funnel
+    // status moves so the pipeline count stops being wrong.
+    if (user.userType === UserType.LEAD) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { leadStatus: 'CONVERTED' },
+      });
+    }
+
+    await recordActivity({
+      projectId,
+      actorId,
+      action: 'member.joined',
+      entityType: 'ProjectMember',
+      entityId: member.id,
+      summary: `${user.name} was added to the project`,
+      isInternal: false,
+    });
+
+    NotificationService.emitAsync({
+      event: 'lead.added_to_project',
+      userIds: [user.id],
+      link: `/portal/projects/${projectId}`,
+      context: {
+        recipientName: user.name,
+        actorName: actor?.name ?? 'The team',
+        projectName: project.title,
+        actionUrl: `${env.CLIENT_URL}/portal/projects/${projectId}`,
+      },
     });
 
     return member;

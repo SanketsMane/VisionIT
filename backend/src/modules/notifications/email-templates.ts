@@ -50,6 +50,18 @@ export interface TemplateContext {
   /** Overrides the default button label. */
   actionLabel?: string;
   /** Studio identity, for white-labelling per workspace. */
+  leadName?: string;
+  leadEmail?: string;
+  leadPhone?: string;
+  leadCompany?: string;
+  leadSource?: string;
+  leadNote?: string;
+  senderName?: string;
+  senderEmail?: string;
+  senderPhone?: string;
+  senderCompany?: string;
+  subject?: string;
+  messageBody?: string;
   brandName?: string;
   logoUrl?: string;
   expiresAt?: string;
@@ -950,6 +962,128 @@ export const TEMPLATES: Record<NotificationEvent, TemplateFn> = {
       },
     ],
     footerNote: 'You received this because you have unread messages in a project you are part of.',
+  }),
+// ---- Leads & website ------------------------------------------------------
+
+  'lead.welcome': (ctx) => ({
+    subject: `Welcome to ${n(ctx.brandName, env.APP_NAME)}`,
+    preheader: 'Your account is ready — browse our work and tell us what you need.',
+    heading: 'Welcome aboard',
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content:
+          'Thanks for signing up. Your account is ready, and you can start looking around straight away.',
+      },
+      { type: 'heading', level: 3, content: 'What you can do now' },
+      {
+        type: 'list',
+        items: [
+          { term: 'Browse the catalog', description: 'Every project we have delivered, sorted by the kind of work.' },
+          { term: 'Explore services', description: 'Development, hosting, SMS, AI and marketing, with pricing where we have it.' },
+          { term: 'Message us directly', description: 'Ask a question or send a brief — it reaches us, not a queue.' },
+        ],
+      },
+      {
+        type: 'callout',
+        tone: 'info',
+        title: 'When we start working together',
+        body: 'Once a project begins, it appears in your dashboard with its invoices, testing, delivery and files — all in the same place you are already signed in to.',
+      },
+      ...action(ctx, 'Browse our work'),
+    ],
+    footerNote: 'You received this because you created an account on our website.',
+  }),
+
+  'lead.registered': (ctx) => ({
+    subject: `New sign-up: ${n(ctx.leadName)}`,
+    preheader: `${n(ctx.leadEmail)} — via ${n(ctx.leadSource)}`,
+    heading: 'Someone signed up',
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'facts',
+        rows: [
+          { label: 'Name', value: n(ctx.leadName) },
+          { label: 'Email', value: n(ctx.leadEmail) },
+          { label: 'Phone', value: n(ctx.leadPhone, '—') },
+          { label: 'Company', value: n(ctx.leadCompany, '—') },
+          { label: 'Found us via', value: n(ctx.leadSource) },
+        ],
+      },
+      ...(ctx.leadNote
+        ? ([
+            { type: 'heading', level: 3, content: 'What they are after' },
+            { type: 'quote', body: ctx.leadNote },
+          ] as EmailBlock[])
+        : []),
+      ...action(ctx, 'Open the lead'),
+    ],
+    footerNote: 'You received this because someone registered on your website.',
+    automated: true,
+  }),
+
+  'lead.added_to_project': (ctx) => ({
+    subject: `You've been added to ${n(ctx.projectName)}`,
+    preheader: 'The project is now in your dashboard.',
+    heading: `You now have access to ${n(ctx.projectName)}`,
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content: `${n(ctx.actorName, 'We')} added you to ${n(ctx.projectName)}. It is in your dashboard now, alongside everything else you already had.`,
+      },
+      {
+        type: 'text',
+        content:
+          'From here you can follow progress, raise issues, review deliveries, see invoices and send us files.',
+      },
+      ...action(ctx, 'Open the project'),
+    ],
+    footerNote: 'You received this because you were added to a project.',
+  }),
+
+  'contact.received': (ctx) => ({
+    subject: `Website enquiry from ${n(ctx.senderName)}`,
+    preheader: n(ctx.subject, 'A message came in through the site.'),
+    heading: 'New enquiry',
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'facts',
+        rows: [
+          { label: 'From', value: n(ctx.senderName) },
+          { label: 'Email', value: n(ctx.senderEmail) },
+          { label: 'Phone', value: n(ctx.senderPhone, '—') },
+          { label: 'Company', value: n(ctx.senderCompany, '—') },
+          { label: 'Subject', value: n(ctx.subject, '—') },
+        ],
+      },
+      { type: 'heading', level: 3, content: 'Their message' },
+      { type: 'quote', body: n(ctx.messageBody) },
+      ...action(ctx, 'Open enquiries'),
+    ],
+    footerNote: 'You received this because someone used the contact form on your website.',
+    automated: true,
+  }),
+
+  'contact.acknowledged': (ctx) => ({
+    subject: 'We got your message',
+    preheader: 'Thanks for getting in touch — we will reply shortly.',
+    heading: 'Thanks for getting in touch',
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content:
+          'Your message has reached us and someone will read it properly, not skim it. You can expect a reply within one working day.',
+      },
+      { type: 'heading', level: 3, content: 'What you sent us' },
+      { type: 'quote', body: n(ctx.messageBody) },
+    ],
+    footerNote: 'You received this because you sent us a message through our website.',
+    automated: true,
   }),
 };
 

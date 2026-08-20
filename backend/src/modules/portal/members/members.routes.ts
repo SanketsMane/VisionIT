@@ -2,7 +2,13 @@ import { Router } from 'express';
 import { authenticate, validate } from '@middlewares/index';
 import { requireProjectAccess } from '@middlewares/project-access.middleware';
 import { MembersController } from './members.controller';
-import { addInternalSchema, memberIdParam, updateRoleSchema } from './members.validation';
+import {
+  addInternalSchema,
+  attachExistingSchema,
+  memberIdParam,
+  searchAttachableSchema,
+  updateRoleSchema,
+} from './members.validation';
 import { projectIdParam } from '../invitations/invitations.validation';
 
 const router = Router({ mergeParams: true });
@@ -22,6 +28,21 @@ router.post(
   validate({ params: projectIdParam, body: addInternalSchema }),
   requireProjectAccess('team:manage', 'project:manage'),
   MembersController.addInternal,
+);
+
+// Search before the `:memberId` routes, or "search" is read as a member id.
+router.get(
+  '/search',
+  validate({ params: projectIdParam, query: searchAttachableSchema }),
+  requireProjectAccess('team:manage'),
+  MembersController.searchAttachable,
+);
+
+router.post(
+  '/attach',
+  validate({ params: projectIdParam, body: attachExistingSchema }),
+  requireProjectAccess('team:manage', 'project:manage'),
+  MembersController.attachExisting,
 );
 
 router.patch(

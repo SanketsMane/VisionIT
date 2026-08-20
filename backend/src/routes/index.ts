@@ -21,6 +21,8 @@ import notificationRoutes from '@modules/notifications/notification.routes';
 import supportRoutes from '@modules/support/support.routes';
 import chatRoutes from '@modules/chat/chat.routes';
 import serviceRoutes from '@modules/services/services.routes';
+import leadRoutes from '@modules/leads/leads.routes';
+import portfolioRoutes from '@modules/portfolio/portfolio.routes';
 
 const router = Router();
 
@@ -91,5 +93,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/support', supportRoutes);
 router.use('/chat', chatRoutes);
 router.use('/services', serviceRoutes);
+router.use('/leads', leadRoutes);
+router.use('/portfolio', portfolioRoutes);
 
 export default router;

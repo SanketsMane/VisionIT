@@ -117,14 +117,23 @@ export const requireInternal = (req: Request, _res: Response, next: NextFunction
   next();
 };
 
-/** Rejects internal users from client-portal-only routes. */
-export const requireClient = (req: Request, _res: Response, next: NextFunction): void => {
+/**
+ * Rejects internal users from portal-only routes.
+ *
+ * LEAD counts as a portal user. A lead has no project yet, so anything behind
+ * this guard must work without one — the guard answers "are you on the portal
+ * side of the platform", not "do you have a project".
+ */
+export const requirePortalUser = (req: Request, _res: Response, next: NextFunction): void => {
   if (!req.user) return next(ApiError.unauthorized('Authentication required'));
-  if (req.user.userType !== UserType.CLIENT) {
+  if (req.user.userType === UserType.INTERNAL) {
     return next(ApiError.forbidden('This route is for client portal users'));
   }
   next();
 };
+
+/** @deprecated Use `requirePortalUser`, which also admits leads. */
+export const requireClient = requirePortalUser;
 
 /** Convenience accessor for handlers mounted behind `requireProjectAccess`. */
 export const getProjectAccess = (req: Request): ProjectAccess => {

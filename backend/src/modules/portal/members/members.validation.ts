@@ -13,3 +13,12 @@ export const updateRoleSchema = z.object({
 export const addInternalSchema = z.object({
   userId: z.string().min(1),
 });
+
+export const searchAttachableSchema = z.object({
+  q: z.string().trim().max(120).optional(),
+});
+
+export const attachExistingSchema = z.object({
+  userId: z.string().min(1),
+  role: z.nativeEnum(ProjectRole),
+});

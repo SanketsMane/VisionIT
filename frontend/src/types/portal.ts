@@ -2,7 +2,7 @@ import type { SupportSummary } from '@/lib/api/support.api';
 
 // ── Portal enums (mirrors the Prisma schema) ────────────────────────────────
 
-export type UserType = 'INTERNAL' | 'CLIENT';
+export type UserType = 'INTERNAL' | 'CLIENT' | 'LEAD';
 
 export type ProjectRole =
   | 'CLIENT_OWNER' | 'CLIENT_MANAGER' | 'TESTER' | 'VIEWER' | 'INTERNAL_MEMBER';

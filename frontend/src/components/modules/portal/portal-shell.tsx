@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Activity, Bug, ChevronLeft, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
+  Activity, Boxes, Bug, ChevronLeft, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
   MessageSquare, Monitor, Moon, PackageCheck, Receipt, ShoppingBag, Sun, Users,
+  type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { useAuthStore } from '@/store/auth.store';
+import { SITE } from '@/lib/site.config';
 import { useUiStore, type Theme } from '@/store/ui.store';
 import { workspaceApi } from '@/lib/api/portal.api';
 import { chatApi } from '@/lib/api/chat.api';
@@ -55,6 +57,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  // Only website sign-ups get the Catalog tab.
+  const isLead = user?.userType === 'LEAD';
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -114,6 +118,18 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const navProjectId = projectId ?? lastProjectId ?? (projects.length === 1 ? projects[0].id : undefined);
   const activeProject = projects.find((p) => p.id === navProjectId);
   const studio = dashboard.data?.studio;
+
+  /**
+   * What the top bar is looking at.
+   *
+   * The global pages have no project to name, so falling back to the project
+   * label made Catalog, Services and Messages all announce "My projects".
+   */
+  const headerTitle =
+    pathname.startsWith('/portal/catalog') ? 'Catalog'
+    : pathname.startsWith('/portal/services') ? 'Services'
+    : pathname.startsWith('/portal/messages') ? 'Messages'
+    : activeProject?.title ?? 'My projects';
   const hasSingleProject = dashboard.data?.projects.length === 1;
 
 
@@ -212,11 +228,16 @@ export function PortalShell({ children }: { children: ReactNode }) {
     );
   };
 
-  const servicesLink = (collapsed: boolean) => {
-    const active = pathname.startsWith('/portal/services');
+  /** A global nav item — not scoped to any one project. */
+  const globalLink = (
+    collapsed: boolean,
+    { href, label, icon: Icon }: { href: string; label: string; icon: LucideIcon },
+  ) => {
+    const active = pathname.startsWith(href);
     const link = (
       <Link
-        href="/portal/services"
+        key={href}
+        href={href}
         onClick={() => setMobileOpen(false)}
         aria-current={active ? 'page' : undefined}
         className={cn(
@@ -225,12 +246,25 @@ export function PortalShell({ children }: { children: ReactNode }) {
           active ? 'bg-primary-muted text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
         )}
       >
-        <ShoppingBag className="size-4 shrink-0" />
-        {!collapsed && <span className="flex-1 truncate">Services</span>}
+        <Icon className="size-4 shrink-0" />
+        {!collapsed && <span className="flex-1 truncate">{label}</span>}
       </Link>
     );
-    return collapsed ? <Tooltip content="Services" side="right">{link}</Tooltip> : link;
+    return collapsed ? <Tooltip key={href} content={label} side="right">{link}</Tooltip> : link;
   };
+
+  const servicesLink = (collapsed: boolean) =>
+    globalLink(collapsed, { href: '/portal/services', label: 'Services', icon: ShoppingBag });
+
+  /**
+   * Only for people who signed up on the website.
+   *
+   * An invited client came for their project, not to browse a portfolio, so
+   * showing them the catalog would be noise. A lead signed up precisely to look
+   * at the work, so for them it is the main event.
+   */
+  const catalogLink = (collapsed: boolean) =>
+    isLead ? globalLink(collapsed, { href: '/portal/catalog', label: 'Catalog', icon: Boxes }) : null;
 
   const sidebar = (collapsed: boolean) => (
     <TooltipProvider>
@@ -253,7 +287,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
           )}
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-tight">{studio?.name ?? 'Client portal'}</p>
+              <p className="truncate text-sm font-semibold leading-tight">
+                {studio?.name ?? SITE.name}
+              </p>
               <p className="text-[10px] text-muted-foreground">Client portal</p>
             </div>
           )}
@@ -289,6 +325,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               );
             })()}
 
+          {!activeProject && catalogLink(collapsed)}
           {!activeProject && messagesLink(collapsed)}
           {!activeProject && servicesLink(collapsed)}
 
@@ -310,6 +347,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               {/* Messages is the only item here that is not scoped to the
                   project — a client with two projects still has one inbox — so
                   it sits above the divider rather than among the sections. */}
+              {catalogLink(collapsed)}
               {messagesLink(collapsed)}
               {servicesLink(collapsed)}
               <div className={cn('my-2 h-px bg-border', collapsed && 'mx-1')} />
@@ -374,9 +412,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           </Button>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {activeProject?.title ?? 'My projects'}
-            </p>
+            <p className="truncate text-sm font-semibold">{headerTitle}</p>
           </div>
 
           <NotificationBell />

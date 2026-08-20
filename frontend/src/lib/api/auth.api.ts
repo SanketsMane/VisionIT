@@ -1,5 +1,6 @@
 import { del, get, patch, post, setAccessToken } from './client';
 import type { User } from '@/types';
+import type { LeadRegisterInput } from './public.api';
 
 export interface AuthResponse {
   user: User;
@@ -13,6 +14,12 @@ export interface Session {
   ipAddress: string | null;
   createdAt: string;
   expiresAt: string;
+}
+
+interface LeadAuthResponse {
+  user: User | null;
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export const authApi = {
@@ -54,6 +61,22 @@ export const authApi = {
   }): Promise<AuthResponse> {
     const data = await post<AuthResponse>('/auth/register', payload);
     setAccessToken(data.accessToken);
+    return data;
+  },
+
+  /**
+   * Public sign-up, which always produces a LEAD.
+   *
+   * A different endpoint from `register` on purpose. `/auth/register`
+   * provisions an internal workspace and stays closed; this one cannot create
+   * anything but a lead no matter what is posted to it.
+   *
+   * `user` comes back null when the honeypot was filled — the server answers
+   * 201 either way so a bot cannot tell it was caught.
+   */
+  async registerLead(payload: LeadRegisterInput): Promise<LeadAuthResponse> {
+    const data = await post<LeadAuthResponse>('/leads/register', payload);
+    if (data.accessToken) setAccessToken(data.accessToken);
     return data;
   },
 

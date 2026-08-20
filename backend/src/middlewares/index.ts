@@ -10,6 +10,7 @@ export {
   requireProjectAccess,
   requireInternal,
   requireClient,
+  requirePortalUser,
   resolveProjectAccess,
   getProjectAccess,
   type ProjectAccess,

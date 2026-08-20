@@ -10,7 +10,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12">
-        <div className="mx-auto w-full max-w-sm">
+        {/* Wide enough for the sign-up form's paired fields; the login form
+            stays visually centred because its own controls are full-width. */}
+        <div className="mx-auto w-full max-w-md">
           <div className="mb-8 flex items-center gap-2.5">
             <Image
               src="/logo-mark.png"

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Copy, Mail, RotateCw, Trash2, UserPlus, Users } from 'lucide-react';
+import { Copy, Mail, RotateCw, Search, Trash2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { PageHeader, SectionHeader } from '@/components/shared/page-header';
 import { EmptyState } from '@/components/shared/empty-state';
 import { Field } from '@/components/shared/form-field';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { AttachUserDialog } from '@/components/modules/portal/attach-user-dialog';
 import { InvitationBadge, RoleBadge } from '@/components/shared/portal-badges';
 import { ProjectWorkspaceTabs } from '@/components/modules/portal/project-tabs';
 import { teamApi } from '@/lib/api/portal.api';
@@ -31,12 +32,18 @@ export default function AdminProjectTeamPage() {
   const params = useParams<{ id: string }>();
   const projectId = params.id;
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [attachOpen, setAttachOpen] = useState(false);
   const { onSuccess, onError } = useMutationHandlers();
 
   const members = useQuery({
     queryKey: queryKeys.portal.members(projectId),
     queryFn: () => teamApi.members(projectId),
     enabled: Boolean(projectId),
+  });
+
+  const attachRoles = useQuery({
+    queryKey: queryKeys.portal.roles(projectId),
+    queryFn: () => teamApi.roles(projectId),
   });
 
   const invitations = useQuery({
@@ -79,9 +86,17 @@ export default function AdminProjectTeamPage() {
         title="Project team"
         description="Client contacts and your own people working on this project."
         actions={
-          <Button onClick={() => setInviteOpen(true)}>
-            <UserPlus /> Invite client
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {/* Two ways in, because there are two situations: someone who has
+                never used the platform needs an invitation, and someone who
+                signed up on the website already has a login. */}
+            <Button variant="outline" onClick={() => setAttachOpen(true)}>
+              <Search /> Add existing
+            </Button>
+            <Button onClick={() => setInviteOpen(true)}>
+              <UserPlus /> Invite client
+            </Button>
+          </div>
         }
       />
 
@@ -94,8 +109,17 @@ export default function AdminProjectTeamPage() {
             <EmptyState
               icon={Users}
               title="Nobody has access yet"
-              description="Invite the client to give them a portal login for this project."
-              action={<Button size="sm" onClick={() => setInviteOpen(true)}><UserPlus /> Invite client</Button>}
+              description="Invite the client, or add someone who already signed up on the website."
+              action={
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setAttachOpen(true)}>
+                    <Search /> Add existing
+                  </Button>
+                  <Button size="sm" onClick={() => setInviteOpen(true)}>
+                    <UserPlus /> Invite client
+                  </Button>
+                </div>
+              }
             />
           ) : (
             <ul className="divide-y divide-border">
@@ -194,6 +218,18 @@ export default function AdminProjectTeamPage() {
       </Card>
 
       <InviteClientDialog open={inviteOpen} onOpenChange={setInviteOpen} projectId={projectId} />
+
+      <AttachUserDialog
+        projectId={projectId}
+        open={attachOpen}
+        onOpenChange={setAttachOpen}
+        onAttached={() =>
+          onSuccess('Added to the project', [queryKeys.portal.members(projectId)])
+        }
+        roles={(attachRoles.data ?? [])
+          .filter((role) => role.clientAssignable)
+          .map((role) => ({ value: role.value, label: role.label, description: role.description }))}
+      />
     </div>
   );
 }

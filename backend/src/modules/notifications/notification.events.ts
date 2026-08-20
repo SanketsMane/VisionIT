@@ -15,6 +15,12 @@ export type NotificationEvent =
   | 'project.member_joined'
   | 'project.status_changed'
   | 'project.announcement'
+  // ---- Leads & website ----------------------------------------------------
+  | 'lead.welcome'
+  | 'lead.registered'
+  | 'lead.added_to_project'
+  | 'contact.received'
+  | 'contact.acknowledged'
   // ---- Finance ------------------------------------------------------------
   | 'invoice.created'
   | 'invoice.due'
@@ -95,6 +101,18 @@ export interface EventContext {
   /** Absolute URL for the email's primary button. Falls back to `link`. */
   actionUrl?: string;
   actionLabel?: string;
+  leadName?: string;
+  leadEmail?: string;
+  leadPhone?: string;
+  leadCompany?: string;
+  leadSource?: string;
+  leadNote?: string;
+  senderName?: string;
+  senderEmail?: string;
+  senderPhone?: string;
+  senderCompany?: string;
+  subject?: string;
+  messageBody?: string;
   /** Studio identity, so a workspace can put its own name on the mail. */
   brandName?: string;
   logoUrl?: string;
@@ -154,6 +172,37 @@ export const EVENT_TEMPLATES: Record<NotificationEvent, EventTemplate> = {
     channels: ['IN_APP', 'EMAIL'],
   },
 
+  // ---- Leads & website ----------------------------------------------------
+  'lead.welcome': {
+    title: () => 'Welcome to Vision IT Infra',
+    body: () => 'Your account is ready. Browse our work and tell us what you need.',
+    subject: () => 'Welcome to Vision IT Infra',
+    channels: ['EMAIL'],
+  },
+  'lead.registered': {
+    title: (c) => `${n(c.leadName)} signed up`,
+    body: (c) => `${n(c.leadEmail)} · found us via ${n(c.leadSource)}.`,
+    subject: (c) => `New sign-up: ${n(c.leadName)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'lead.added_to_project': {
+    title: (c) => `You now have access to ${n(c.projectName)}`,
+    body: (c) => `${n(c.actorName)} added you to ${n(c.projectName)}.`,
+    subject: (c) => `You've been added to ${n(c.projectName)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'contact.received': {
+    title: (c) => `New enquiry from ${n(c.senderName)}`,
+    body: (c) => n(c.subject) || 'Someone sent a message through the website.',
+    subject: (c) => `Website enquiry from ${n(c.senderName)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'contact.acknowledged': {
+    title: () => 'We got your message',
+    body: () => 'Thanks for getting in touch — we will reply shortly.',
+    subject: () => 'We got your message',
+    channels: ['EMAIL'],
+  },
   // ---- Finance ------------------------------------------------------------
   'invoice.created': {
     title: (c) => `Invoice ${n(c.invoiceNumber)}`,

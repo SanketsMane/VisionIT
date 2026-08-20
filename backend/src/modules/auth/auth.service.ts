@@ -29,7 +29,7 @@ const ACCESS_TTL_MS = expiresInMs(env.JWT_ACCESS_EXPIRES_IN);
  * Issues a fresh access/refresh pair and persists only the *hash* of the
  * refresh token, so a database dump cannot be replayed as a live session.
  */
-const issueTokens = async (
+export const issueTokens = async (
   user: { id: string; email: string; role: string },
   context: SessionContext,
 ): Promise<TokenPair> => {

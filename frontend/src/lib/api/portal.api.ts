@@ -89,6 +89,18 @@ export const workspaceApi = {
     >('/portal/delivery-board'),
 };
 
+export interface AttachableUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  userType: 'LEAD' | 'CLIENT';
+  leadCompany: string | null;
+  leadSource: string | null;
+  leadStatus: string | null;
+}
+
 // ── Team & invitations ──────────────────────────────────────────────────────
 
 export const teamApi = {
@@ -113,6 +125,18 @@ export const teamApi = {
 
   restoreMember: (projectId: string, memberId: string) =>
     post<ProjectMember>(`${base(projectId)}/members/${memberId}/restore`),
+
+  /**
+   * Leads and clients who already have an account and are not on this project.
+   *
+   * These people can be attached directly — they have a working login, so an
+   * invitation email would just be a slower way to reach the same place.
+   */
+  searchAttachable: (projectId: string, q: string) =>
+    get<AttachableUser[]>(`${base(projectId)}/members/search`, { params: { q } }),
+
+  attach: (projectId: string, userId: string, role: string) =>
+    post<ProjectMember>(`${base(projectId)}/members/attach`, { userId, role }),
 
   invitations: (projectId: string) =>
     get<ProjectInvitation[]>(`${base(projectId)}/invitations`),

@@ -67,7 +67,7 @@ export default function OrdersPage() {
       <PageHeader
         title="Orders"
         description="What clients have ordered, and what needs you."
-        actions={<Button asChild variant="ghost"><Link href="/services"><ArrowLeft /> Services</Link></Button>}
+        actions={<Button asChild variant="ghost"><Link href="/studio/services"><ArrowLeft /> Services</Link></Button>}
       />
 
       <div className="flex flex-wrap gap-1.5">

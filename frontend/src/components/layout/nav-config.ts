@@ -1,5 +1,6 @@
 import {
-  BarChart3, BookOpen, Boxes, Briefcase, FileText, LayoutDashboard, Mail, MessageSquare, PackageCheck, Receipt, Settings, UserCheck, Users, Wallet,
+  BarChart3, BookOpen, Boxes, Briefcase, FileText, LayoutDashboard, Mail, MessageSquare, PackageCheck,
+  Receipt, Settings, Sparkles, UserCheck, UserPlus, Users, Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -32,7 +33,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Projects', href: '/projects', icon: Briefcase, description: 'Your portfolio catalog' },
       { label: 'Clients', href: '/clients', icon: Users, description: 'People you work with' },
-      { label: 'Services', href: '/services', icon: Boxes, description: 'What you sell, and enquiries' },
+      { label: 'Services', href: '/studio/services', icon: Boxes, description: 'What you sell, and enquiries' },
+      { label: 'Portfolio', href: '/studio/portfolio', icon: Sparkles, description: 'What the website shows' },
     ],
   },
   {
@@ -49,6 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Client portal',
     items: [
+      { label: 'Leads', href: '/leads', icon: UserPlus, description: 'Website sign-ups and enquiries' },
       { label: 'Portal users', href: '/portal-users', icon: Users, description: 'Who can reach your projects' },
       { label: 'Delivery board', href: '/delivery-board', icon: PackageCheck, description: 'Handover status across projects' },
     ],
