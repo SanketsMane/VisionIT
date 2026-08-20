@@ -17,7 +17,8 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "db:seed:services": "tsx src/db/seed/services-only.ts",
-    "db:seed:portfolio": "tsx src/db/seed/portfolio-only.ts"
+    "db:seed:portfolio": "tsx src/db/seed/portfolio-only.ts",
+    "db:seed:catalog": "tsx src/db/seed/catalog-only.ts"
   },
   "engines": {
     "node": ">=20"

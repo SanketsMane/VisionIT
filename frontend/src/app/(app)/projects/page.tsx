@@ -25,6 +25,7 @@ import { Money } from '@/components/shared/money';
 import { CATEGORY_LABELS, CategoryBadge, ProjectStatusBadge } from '@/components/shared/status-badge';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { ProjectFormDialog } from '@/components/modules/projects/project-form';
+import { ProjectsTabs } from '@/components/modules/projects/projects-tabs';
 import { projectsApi, type ProjectListParams } from '@/lib/api/projects.api';
 import { queryKeys } from '@/lib/hooks/query-keys';
 import { useMutationHandlers } from '@/lib/hooks/use-mutation-toast';
@@ -100,13 +101,15 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Projects"
-        description="Your catalog of shipped and in-flight work."
+        description="Client engagements, and the catalog the website shows."
         actions={
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus /> Add project
           </Button>
         }
       />
+
+      <ProjectsTabs />
 
       {stats.data && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

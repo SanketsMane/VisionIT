@@ -46,6 +46,13 @@ echo "    dist/server.js $( [ -f dist/server.js ] && echo ok || echo MISSING )"
 #     cd /root/visionitinfra/backend && npm run db:seed:services
 echo "    service catalog: seed manually with 'npm run db:seed:services' if this is a fresh database"
 
+# The work catalog — what the website shows as recent work — is seed data for
+# the same reason, with one difference: a re-run is safe, because it refreshes
+# only the facts and leaves copy edited in the studio alone. Pass --rewrite when
+# catalog.ts itself has changed and you want that copy pushed over the top.
+#     cd /root/visionitinfra/backend && npm run db:seed:catalog
+echo "    work catalog: 'npm run db:seed:catalog' (add -- --rewrite to push edited copy)"
+
 step "Checking the PDF renderer"
 # Invoice PDFs are rendered by headless Chrome. Two things have to be true, and
 # both failed silently on first deploy: `unzip` must exist or the browser

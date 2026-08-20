@@ -31,10 +31,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Work',
     items: [
-      { label: 'Projects', href: '/projects', icon: Briefcase, description: 'Your portfolio catalog' },
+      { label: 'Projects', href: '/projects', icon: Briefcase, description: 'Client engagements you deliver' },
+      { label: 'Catalog projects', href: '/projects/catalog', icon: Sparkles, description: 'The work the website shows' },
       { label: 'Clients', href: '/clients', icon: Users, description: 'People you work with' },
       { label: 'Services', href: '/studio/services', icon: Boxes, description: 'What you sell, and enquiries' },
-      { label: 'Portfolio', href: '/studio/portfolio', icon: Sparkles, description: 'What the website shows' },
     ],
   },
   {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -26,8 +27,18 @@ export function Sidebar({
   const toggle = useUiStore((state) => state.toggleSidebar);
   const collapsed = expanded ? false : stored;
 
-  /** A nested route (/invoices/abc) must still light up its parent nav item. */
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  /**
+   * A nested route (/invoices/abc) must still light up its parent nav item —
+   * but only the closest one. /projects/catalog has an item of its own, so the
+   * longest matching href wins and /projects stays dim underneath it.
+   */
+  const activeHref = useMemo(() => {
+    const matches = NAV_GROUPS.flatMap((group) => group.items)
+      .map((item) => item.href)
+      .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+      .sort((a, b) => b.length - a.length);
+    return matches[0] ?? null;
+  }, [pathname]);
 
   return (
     <TooltipProvider>
@@ -64,7 +75,7 @@ export function Sidebar({
               )}
               <ul className="space-y-0.5">
                 {group.items.map((item) => {
-                  const active = isActive(item.href);
+                  const active = item.href === activeHref;
                   const link = (
                     <Link
                       href={item.href}

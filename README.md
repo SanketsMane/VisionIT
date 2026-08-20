@@ -69,6 +69,7 @@ npm run dev
 | `npm run typecheck` | Typechecks both projects |
 | `npm run db:migrate` / `db:deploy` | Prisma migrations (dev / production) |
 | `npm run db:seed` | Provisions a **clean** workspace (no business data) — idempotent |
+| `npm run db:seed:catalog` (in `backend/`) | Writes the work catalog the website shows — idempotent; `-- --rewrite` re-pushes the copy |
 | `npm run setup` | install + migrate + seed in one go |
 
 ---
