@@ -23,7 +23,11 @@ import { PrismaClient, ProjectCategory } from '@prisma/client';
  * Fields a person is expected to rewrite. Once an entry exists, the seed will
  * not touch these again, so a re-run never clobbers copy someone wrote.
  */
-const PRESERVED = ['tagline', 'summary', 'highlights', 'clientLabel', 'testimonial'] as const;
+const PRESERVED = [
+  'tagline', 'summary', 'highlights', 'clientLabel', 'testimonial',
+  // Images too — see `imagesOnFirstRun`. A cover someone removed stays removed.
+  'coverImage', 'gallery',
+] as const;
 
 interface KnownWork {
   /** Matched case-insensitively against the project title. */
@@ -138,11 +142,22 @@ export const seedPortfolio = async (
       category: known?.category ?? project.category,
       industry: known?.industry ?? null,
       liveUrl: project.liveUrl ?? null,
-      coverImage: project.coverImageUrl ?? null,
-      gallery: project.galleryUrls ?? [],
       techStack: projectTech.length ? projectTech : (known?.techStack ?? []),
       deliveredAt: project.endDate ?? null,
       sourceProjectId: project.id,
+    };
+
+    /**
+     * Images are offered once, never re-applied.
+     *
+     * A project's cover is an internal asset and may carry things that have no
+     * business on a public page — one of ours was a status card printing the
+     * contract value and milestone count. Suggesting it at creation is useful;
+     * pushing it back after someone removed it is not.
+     */
+    const imagesOnFirstRun = {
+      coverImage: project.coverImageUrl ?? null,
+      gallery: project.galleryUrls ?? [],
     };
 
     if (existing) {
@@ -156,6 +171,7 @@ export const seedPortfolio = async (
         ownerId,
         slug,
         ...facts,
+        ...imagesOnFirstRun,
         tagline: known?.tagline ?? '',
         summary: known?.summary ?? project.description ?? '',
         highlights: known?.highlights ?? [],
