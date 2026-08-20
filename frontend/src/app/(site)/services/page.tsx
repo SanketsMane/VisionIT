@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/shared/empty-state';
 import { publicApi } from '@/lib/api/public.api';
+import { PageHero } from '@/components/site/page-hero';
 import type { Service, ServiceCategory } from '@/lib/api/services.api';
 
 const rupees = (value: number) => `₹${value.toLocaleString('en-IN')}`;
@@ -89,14 +90,14 @@ export default function PublicServicesPage() {
   }, [services.data]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-      <header className="max-w-2xl">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Services</h1>
-        <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-          What we build and what we run. Where a price is fixed we show it; where the work depends
-          on what you need, we quote.
-        </p>
-      </header>
+    <>
+      <PageHero
+        eyebrow="Services"
+        title="What we build, and what we run"
+        description="Where a price is fixed we show it. Where the work depends on what you need, we quote — and the quote is what you pay."
+      />
+
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
 
       {services.isLoading ? (
         <div className="mt-12 space-y-10">
@@ -160,7 +161,8 @@ export default function PublicServicesPage() {
           </Button>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 

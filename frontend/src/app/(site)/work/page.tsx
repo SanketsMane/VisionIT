@@ -9,6 +9,7 @@ import { WorkCard } from '@/components/site/work-strip';
 import { WORK_CATEGORY_LABELS, publicApi, type WorkCategory } from '@/lib/api/public.api';
 import { cn } from '@/lib/utils';
 import { Boxes } from 'lucide-react';
+import { PageHero } from '@/components/site/page-hero';
 
 /**
  * Everything we have built, filterable by the kind of work.
@@ -33,13 +34,14 @@ export default function WorkPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-      <header className="max-w-2xl">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Our work</h1>
-        <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-          Products we have designed, built and put live — across web, mobile, trading and AI.
-        </p>
-      </header>
+    <>
+      <PageHero
+        eyebrow="Selected work"
+        title="Products we designed, built and put live"
+        description="Across web, mobile, trading and AI — each one shipped, supported and still running."
+      />
+
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
 
       {work.isLoading ? (
         <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -88,7 +90,8 @@ export default function WorkPage() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

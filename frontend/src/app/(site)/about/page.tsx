@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Boxes, Gauge, HeartHandshake, MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SITE } from '@/lib/site.config';
+import { PageHero } from '@/components/site/page-hero';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -34,14 +35,14 @@ const PRINCIPLES = [
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
-      <header className="max-w-2xl">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">About {SITE.name}</h1>
-        <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground">
-          We are a software studio that builds web platforms, mobile apps, trading systems and AI
-          products — and then keeps them running.
-        </p>
-      </header>
+    <>
+      <PageHero
+        eyebrow="About us"
+        title={`We build software, then we stay`}
+        description="A studio that ships web platforms, mobile apps, trading systems and AI products — and keeps them running afterwards."
+      />
+
+      <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 sm:py-16">
 
       <div className="mt-10 space-y-5 text-pretty leading-relaxed text-foreground/90">
         <p>
@@ -94,6 +95,7 @@ export default function AboutPage() {
           </Button>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

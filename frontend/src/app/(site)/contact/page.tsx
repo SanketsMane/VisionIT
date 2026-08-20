@@ -12,6 +12,7 @@ import { Field } from '@/components/shared/form-field';
 import { LEAD_SOURCE_OPTIONS, publicApi, type LeadSource } from '@/lib/api/public.api';
 import { ApiRequestError } from '@/lib/api/client';
 import { SITE, addressLines, hasAddress } from '@/lib/site.config';
+import { PageHero } from '@/components/site/page-hero';
 
 export default function ContactPage() {
   const [form, setForm] = useState({
@@ -46,13 +47,14 @@ export default function ContactPage() {
   const address = addressLines();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-      <header className="max-w-2xl">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Get in touch</h1>
-        <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-          Tell us what you are building, or ask about anything we do. {SITE.responseTime}.
-        </p>
-      </header>
+    <>
+      <PageHero
+        eyebrow="Contact"
+        title="Tell us what you are building"
+        description={`Or ask about anything we do. ${SITE.responseTime}, every enquiry.`}
+      />
+
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
 
       <div className="mt-12 grid gap-10 lg:grid-cols-[1.3fr_1fr]">
         {/* ── Form ───────────────────────────────────────────────────────── */}
@@ -246,7 +248,8 @@ export default function ContactPage() {
             </Button>
           </div>
         </aside>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

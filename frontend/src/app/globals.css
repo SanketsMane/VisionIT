@@ -226,3 +226,10 @@ input:-webkit-autofill:focus {
     display: none !important;
   }
 }
+
+/* Continuous logo/tool strip. Translating by -50% lands exactly on the start
+   of the duplicated copy, so the seam is invisible. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
