@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, ArrowLeft, PackageCheck, Sparkles } from 'lucide-react';
+import {
+  ArrowRight, ArrowLeft, PackageCheck, Sparkles,
+  Code2, CandlestickChart, Bot, Server, MessageSquareText, TrendingUp,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,41 +28,49 @@ const rupees = (value: number) => `₹${value.toLocaleString('en-IN')}`;
  * A curated list rather than every enum value: the client picks a need, not a
  * database category, and an empty group is worse than a missing one.
  */
-const GROUPS: { key: string; label: string; blurb: string; categories: ServiceCategory[] }[] = [
+const GROUPS: {
+  key: string; label: string; blurb: string; icon: LucideIcon; categories: ServiceCategory[];
+}[] = [
   {
     key: 'build',
     label: 'Build something',
     blurb: 'Web, mobile, AI and fintech products built end to end.',
+    icon: Code2,
     categories: ['WEB_DEVELOPMENT', 'ANDROID_APP', 'IOS_APP', 'AI_SOFTWARE', 'FINTECH_PLATFORM'],
   },
   {
     key: 'trading',
     label: 'Trading systems',
     blurb: 'Broker platforms, algos, Pine Script, MT5 and copy trading.',
+    icon: CandlestickChart,
     categories: ['TRADING_PLATFORM', 'ALGO_TRADING'],
   },
   {
     key: 'ai',
     label: 'Vision AI',
     blurb: 'Chat and calling agents, automation, image and video generation.',
+    icon: Bot,
     categories: ['AI_AGENT', 'AUTOMATION', 'MEDIA_GENERATION'],
   },
   {
     key: 'hosting',
     label: 'Hosting',
     blurb: 'Servers we set up, secure and keep running for you.',
+    icon: Server,
     categories: ['VPS_HOSTING', 'WINDOWS_HOSTING'],
   },
   {
     key: 'messaging',
     label: 'Bulk SMS',
     blurb: 'Transactional and promotional SMS. No DLT registration.',
+    icon: MessageSquareText,
     categories: ['SMS_SERVICE'],
   },
   {
     key: 'growth',
     label: 'Grow it',
     blurb: 'Marketing, SEO and lead generation once it is live.',
+    icon: TrendingUp,
     categories: ['SOCIAL_MEDIA', 'DIGITAL_MARKETING', 'SEO', 'LEAD_GENERATION'],
   },
 ];
@@ -121,7 +133,7 @@ export default function PortalServicesPage() {
                 className="group rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-primary hover:shadow-soft"
               >
                 <span className="grid size-10 place-items-center rounded-lg bg-primary-muted text-primary">
-                  <Sparkles className="size-5" />
+                  <option.icon className="size-5" />
                 </span>
                 <p className="mt-3 text-sm font-semibold">{option.label}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{option.blurb}</p>
