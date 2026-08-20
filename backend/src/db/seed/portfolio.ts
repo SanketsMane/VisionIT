@@ -46,13 +46,14 @@ const KNOWN: KnownWork[] = [
     match: /refilify/i,
     category: ProjectCategory.CROSS_PLATFORM_APP,
     industry: 'Retail & fintech',
-    tagline: 'A cashback and coupon app, built and delivered end to end.',
+    tagline: 'A cashback and coupon app, built and shipped end to end.',
     summary:
-      'Refilify is a cashback and coupon platform. We handled the build from the ground up — the customer-facing app, the offer and coupon management behind it, and the deployment that put it live.\n\nDelivered in milestones, with the client reviewing each stage in their own portal before it was signed off.',
+      'Refilify lets shoppers find offers and earn cashback in one place. We built it from the ground up — the customer app, the coupon and offer management behind it, and the deployment that put it live.\n\nDelivered in milestones, each reviewed and signed off by the client in their own portal before we moved to the next.',
     techStack: [],
     highlights: [
       'Cashback and coupon engine',
-      'Customer-facing mobile experience',
+      'Customer-facing mobile app',
+      'Offer management for the operator',
       'Delivered in reviewed milestones',
     ],
   },
@@ -60,21 +61,30 @@ const KNOWN: KnownWork[] = [
     match: /truck\s*gee/i,
     category: ProjectCategory.WEB_DEVELOPMENT,
     industry: 'Logistics & transport',
-    tagline: 'A logistics platform, live at truckgee.com.',
+    tagline: 'A marketplace matching spare truck capacity to the loads that need it.',
     summary:
-      'TruckGee is a logistics product we built and shipped. The engagement covered the platform itself and the hosting it runs on, with a year of technical support after handover.',
+      'TruckGee connects operators with unused space in their trucks to the people who need freight moved — turning empty return journeys into paid ones.\n\nWe built and shipped the platform, set up the hosting it runs on, and stayed on for a year of technical support after handover.',
     techStack: [],
-    highlights: ['Built and shipped end to end', 'Hosting set up and managed', 'One year of support included'],
+    highlights: [
+      'Capacity and load matching',
+      'Built and shipped end to end',
+      'Hosting set up and managed',
+      'One year of support included',
+    ],
   },
   {
     match: /echo\s*soul/i,
     category: ProjectCategory.WEB_DEVELOPMENT,
-    industry: 'Web platform',
-    tagline: 'A web platform, live at echosoul.co.in.',
+    industry: 'Counselling & wellbeing',
+    tagline: 'A platform connecting people to counsellors and life coaches.',
     summary:
-      'EchoSoul is a web platform we designed, built and deployed. Handed over complete, with a year of technical support attached.',
+      'EchoSoul gives people a way to find and book counselling and life coaching, and gives practitioners somewhere to run that side of their work.\n\nWe designed, built and deployed it, handed it over complete, and kept a year of technical support attached.',
     techStack: [],
-    highlights: ['Designed, built and deployed', 'One year of support included'],
+    highlights: [
+      'Counsellor and coach discovery',
+      'Designed, built and deployed',
+      'One year of support included',
+    ],
   },
 ];
 
