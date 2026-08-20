@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /*
+ * Bind the `dark:` variant to the `.dark` class.
+ *
+ * The theme is driven by a class on <html> so the in-app toggle can override
+ * the OS, but Tailwind v4 defaults `dark:` to `prefers-color-scheme`. Without
+ * this the utilities and the tokens disagree: switching to dark in the app
+ * repainted the palette while every `dark:` utility stayed light.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
  * ── Design tokens ───────────────────────────────────────────────────────────
  * One palette, expressed as HSL channel triplets so Tailwind can compose them
  * with opacity modifiers (`bg-primary/10`). Light is the base; the dark block
