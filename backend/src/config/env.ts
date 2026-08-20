@@ -36,6 +36,13 @@ const optionalString = () =>
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(5055),
+  /**
+   * Interface to bind. Defaults to loopback so a reverse proxy is the only way
+   * in — behind nginx the API has no reason to answer on a public interface,
+   * and relying on the firewall alone means one bad rule exposes it. Set to
+   * 0.0.0.0 only when nothing fronts the process.
+   */
+  HOST: z.string().default('127.0.0.1'),
   API_PREFIX: z.string().default('/api/v1'),
   APP_NAME: z.string().default('Vision IT Infra'),
 

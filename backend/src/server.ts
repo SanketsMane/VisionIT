@@ -53,8 +53,8 @@ const bootstrap = async (): Promise<void> => {
 
     const app = createApp();
 
-    server = app.listen(env.PORT, () => {
-      logger.info(`🚀 ${env.APP_NAME} API listening on http://localhost:${env.PORT}`);
+    server = app.listen(env.PORT, env.HOST, () => {
+      logger.info(`🚀 ${env.APP_NAME} API listening on http://${env.HOST}:${env.PORT}`);
       logger.info(`   Environment : ${env.NODE_ENV}`);
       logger.info(`   API base    : http://localhost:${env.PORT}${env.API_PREFIX}`);
       if (env.ENABLE_SWAGGER) {
