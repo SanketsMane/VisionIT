@@ -563,6 +563,36 @@ export const CATALOG: CatalogEntry[] = [
       'Order rating back to the vendor',
     ],
   },
+
+  {
+    slug: 'ecolive-ios',
+    title: 'Ecolive — iOS',
+    tagline: 'The same super app on iPhone and iPad, through App Store review.',
+    summary:
+      'The iOS build of Ecolive, on the App Store since March 2026 and updated since. Same three storefronts in one app — restaurant delivery, quick grocery from neighbourhood kirana stores, and local retail — on a strictly vegetarian marketplace.\n\nBuilt to iOS rather than ported to it: native tab-bar navigation, iOS-native sheets and the platform\u2019s own layout conventions throughout. It ships as a universal app, so it runs on iPad at iPad proportions rather than as a stretched phone build.\n\nSupports iOS 15.5 and above, which covers phones going back several years — worth having when the audience is a whole city rather than an early-adopter segment.',
+    category: ProjectCategory.IOS_APP,
+    industry: 'Q-commerce & retail',
+    liveUrl: 'https://apps.apple.com/in/app/ecolive/id6758672255',
+    coverImage: asset('ecolive-ios', 'cover.webp'),
+    gallery: [
+      asset('ecolive-ios', '01.webp'),
+      asset('ecolive-ios', '02.webp'),
+      asset('ecolive-ios', '03.webp'),
+      asset('ecolive-ios', '04.webp'),
+      asset('ecolive-ios', '05.webp'),
+      asset('ecolive-ios', '06.webp'),
+    ],
+    techStack: [],
+    highlights: [
+      'Universal — iPhone and iPad',
+      'Native iOS navigation and sheets',
+      'Food, grocery and retail in one app',
+      'Strictly vegetarian marketplace',
+      'Supports iOS 15.5 and above',
+      'Through App Store review, and updated since',
+    ],
+    deliveredAt: new Date('2026-03-23'),
+  },
 ];
 
 /** Fields a person is expected to rewrite; a re-run never clobbers them. */
