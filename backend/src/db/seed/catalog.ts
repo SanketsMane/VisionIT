@@ -461,6 +461,108 @@ export const CATALOG: CatalogEntry[] = [
       'Temple listings, sevas and donations',
     ],
   },
+
+  // ── Added from live products. Everything below is drawn from the running
+  //    site or the store listing — no download counts, since both apps are
+  //    early and the number says nothing useful about the build. ─────────────
+  {
+    slug: 'tawktoo',
+    title: 'tawktoo — browser video meetings on WebRTC',
+    tagline: 'Group video, screen sharing and chat that runs in a tab, with no install.',
+    summary:
+      'tawktoo is a video meeting platform built on WebRTC with a mediasoup SFU behind it. An SFU is what makes group calls work at more than a handful of people: each participant sends one stream up and the server forwards it, rather than every browser encoding a copy for every other browser.\n\nA meeting is a link. Participants join from any modern browser on a laptop or a phone with nothing to install, and get high-quality video and audio, screen sharing and in-call messaging. Video quality adapts to the connection rather than stalling on it.\n\nAlongside the meeting UI there is a host portal for running scheduled meetings and a documented API for teams embedding calls into their own product.',
+    category: ProjectCategory.WEB_DEVELOPMENT,
+    industry: 'Communications',
+    liveUrl: 'https://tawktoo.com/',
+    coverImage: asset('tawktoo', 'cover.webp'),
+    gallery: [asset('tawktoo', '01.webp'), asset('tawktoo', '02.webp'), asset('tawktoo', '03.webp')],
+    techStack: ['WebRTC', 'mediasoup', 'Node.js', 'Socket.IO'],
+    highlights: [
+      'mediasoup SFU for group calls',
+      'Joins from a browser, nothing to install',
+      'Screen sharing and in-call messaging',
+      'Encrypted in transit',
+      'Adapts quality to the connection',
+      'Host portal and developer API',
+    ],
+    isFeatured: true,
+  },
+  {
+    slug: 'kidokool',
+    title: 'Kidokool — learning management platform for tutors and students',
+    tagline: 'Courses, 1-on-1 sessions and group classes, with the tutor marketplace around them.',
+    summary:
+      'Kidokool is a learning management platform built around live teaching rather than recorded video alone. Students browse tutors by subject and language, book one-to-one live sessions or join scheduled group classes, and work through structured courses with downloadable material and practice exams.\n\nTutors get the other half of the same system: a public profile, verification, their own classes and materials, and a route to being paid for teaching. Language learning is the strongest use case on it, with tutors listed across a dozen languages.\n\nThe platform ships with light and dark themes and a pricing page, and is on its second major version.',
+    category: ProjectCategory.WEB_DEVELOPMENT,
+    industry: 'Education',
+    liveUrl: 'https://kidokool.xyz/',
+    coverImage: asset('kidokool', 'cover.webp'),
+    gallery: [asset('kidokool', '01.webp'), asset('kidokool', '02.webp'), asset('kidokool', '03.webp')],
+    techStack: [],
+    highlights: [
+      'Tutor marketplace with verification',
+      '1-on-1 live sessions',
+      'Scheduled group classes',
+      'Structured courses with materials',
+      'Certificates and practice exams',
+      'Separate student and tutor journeys',
+    ],
+  },
+  {
+    slug: 'metaquant-pro-android',
+    title: 'MetaQuant Pro — Forex trading terminal on Android',
+    tagline: 'A terminal-style trading app: live pricing, candlestick charts and open positions.',
+    summary:
+      'MetaQuant Pro puts a trading terminal on a phone. The market watch carries live bid, ask and spread across major and minor currency pairs plus gold and crypto, and taps through to a full candlestick chart with multiple timeframes and drawing and indicator tools down the side.\n\nThe trade screen is the part that has to be right: balance, equity, used and free margin and margin level at the top, open positions underneath with running profit and loss per position. History covers closed trades day by day, with deposits and withdrawals reconciled against the balance.\n\nBuilt dark throughout, which is what traders actually use, and laid out so the numbers stay legible on a small screen.',
+    category: ProjectCategory.ANDROID_APP,
+    industry: 'Forex & trading',
+    liveUrl: 'https://play.google.com/store/apps/details?id=com.metaquantpro.app',
+    coverImage: asset('metaquant-pro-android', 'cover.webp'),
+    gallery: [
+      asset('metaquant-pro-android', '01.webp'),
+      asset('metaquant-pro-android', '02.webp'),
+      asset('metaquant-pro-android', '03.webp'),
+      asset('metaquant-pro-android', '04.webp'),
+    ],
+    techStack: [],
+    highlights: [
+      'Live bid, ask and spread per pair',
+      'Candlestick charts with timeframes',
+      'Indicator and drawing tools',
+      'Balance, equity and margin at a glance',
+      'Open positions with running P&L',
+      'Trade history with deposits and withdrawals',
+    ],
+    deliveredAt: new Date('2026-06-23'),
+  },
+  {
+    slug: 'ecolive-android',
+    title: 'Ecolive — food, grocery and shopping super app',
+    tagline: 'One Ahmedabad app for restaurant delivery, kirana and local retail.',
+    summary:
+      'Ecolive folds three apps into one. A single storefront switches between restaurant delivery, quick grocery from neighbourhood kirana stores, and a shopping section for clothing, gifts and household goods, all from local vendors rather than a central warehouse.\n\nIt is a strictly vegetarian marketplace, which is a product decision rather than a filter: every restaurant and product listed on it respects that, so nobody has to check. Ordering carries the things that decide whether a delivery app gets used twice — coupons and UPI cashback applied at checkout, live rider tracking on a map, and a rating prompt afterwards that feeds back to the vendor.\n\nBuilt for one city and for the vendors already trading in it.',
+    category: ProjectCategory.ANDROID_APP,
+    industry: 'Q-commerce & retail',
+    liveUrl: 'https://play.google.com/store/apps/details?id=com.ecoliveindia.ecoliveindia',
+    coverImage: asset('ecolive-android', 'cover.webp'),
+    gallery: [
+      asset('ecolive-android', '01.webp'),
+      asset('ecolive-android', '02.webp'),
+      asset('ecolive-android', '03.webp'),
+      asset('ecolive-android', '04.webp'),
+      asset('ecolive-android', '05.webp'),
+      asset('ecolive-android', '06.webp'),
+    ],
+    techStack: [],
+    highlights: [
+      'Food, grocery and retail in one app',
+      'Strictly vegetarian marketplace',
+      'Local vendors, not a central warehouse',
+      'Coupons and UPI cashback at checkout',
+      'Live rider tracking',
+      'Order rating back to the vendor',
+    ],
+  },
 ];
 
 /** Fields a person is expected to rewrite; a re-run never clobbers them. */
