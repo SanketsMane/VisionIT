@@ -269,6 +269,13 @@ model User {
   bugActivities     BugActivity[]
   bugAttachments    BugAttachment[]
 
+  // ---- Services --------------------------------------------------------------
+  services          Service[]
+  coupons           Coupon[]
+  quoteRequests     QuoteRequest[] @relation("QuoteRequester")
+  ownedQuotes       QuoteRequest[] @relation("QuoteOwner")
+  assignedQuotes    QuoteRequest[] @relation("QuoteAssignee")
+
   // ---- Chat ----------------------------------------------------------------
   conversationsCreated Conversation[]            @relation("ConversationCreator")
   conversations        ConversationParticipant[]
@@ -491,6 +498,255 @@ model Project {
   @@index([userId, status])
   @@index([userId, featured])
   @@map("projects")
+}
+
+enum ServiceCategory {
+  WEB_DEVELOPMENT
+  ANDROID_APP
+  IOS_APP
+  AI_SOFTWARE
+  FINTECH_PLATFORM
+  VPS_HOSTING
+  WINDOWS_HOSTING
+  SOCIAL_MEDIA
+  DIGITAL_MARKETING
+  SEO
+  LEAD_GENERATION
+  OTHER
+}
+
+/// How a service is priced, which decides what the catalog card shows.
+enum PricingModel {
+  /// No figure at all — scope varies too much to publish one.
+  QUOTE_ONLY
+  /// "Starting from Rs X" with a quote button.
+  FROM
+  /// A single fixed price.
+  FIXED
+  /// Has plans with per-term prices, e.g. the VPS tiers.
+  TIERED
+}
+
+enum QuoteStatus {
+  NEW
+  CONTACTED
+  QUOTED
+  WON
+  LOST
+}
+
+/// Something the studio sells. Distinct from Project, which is work already won.
+model Service {
+  id       String          @id @default(cuid())
+  userId   String
+  /// Stable, human-readable key used in public URLs.
+  slug     String
+  name     String
+  tagline  String?
+  description String?
+  category ServiceCategory
+  pricingModel PricingModel @default(QUOTE_ONLY)
+
+  /// Lucide icon name, so the catalog needs no image to look finished.
+  icon        String?
+  coverImageUrl String?
+  accentColor String?
+
+  features     String[] @default([])
+  deliverables String[] @default([])
+
+  /// Used by FROM and FIXED. TIERED services derive theirs from the cheapest plan.
+  startingPrice Decimal? @db.Decimal(18, 2)
+  currency      String   @default("INR")
+  /// Rendered after the price: "/mo", "/project", "per campaign".
+  priceSuffix   String?
+
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+  /// Whether it appears on the public catalog as well as internally.
+  isPublic   Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  metaTitle       String?
+  metaDescription String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plans  ServicePlan[]
+  quotes QuoteRequest[]
+
+  @@unique([userId, slug])
+  @@index([userId, category])
+  @@map("services")
+}
+
+/// A tier within a service — KVM 1, KVM 2, and so on.
+model ServicePlan {
+  id        String @id @default(cuid())
+  serviceId String
+  name      String
+  slug      String
+  summary   String?
+
+  /// Free-form spec rows rendered in order: vCPU, RAM, disk, bandwidth.
+  /// Kept as JSON because the shape differs per service and a column per
+  /// possible spec would be mostly nulls.
+  specs Json?
+
+  features   String[] @default([])
+  isPopular  Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  service Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  prices  ServicePlanPrice[]
+
+  @@unique([serviceId, slug])
+  @@map("service_plans")
+}
+
+/// One price for one plan on one billing term.
+///
+/// A row per term rather than a formula: the ladder between monthly, annual and
+/// two-year is a commercial decision that changes with promotions, and encoding
+/// it as arithmetic would mean a deploy every time a price moves.
+model ServicePlanPrice {
+  id     String @id @default(cuid())
+  planId String
+
+  /// 1, 12 or 24. Stored as a number so new terms need no migration.
+  termMonths Int
+  /// What the client pays per month on this term.
+  price Decimal @db.Decimal(18, 2)
+  /// What it renews at once the introductory term ends.
+  renewalPrice Decimal? @db.Decimal(18, 2)
+  /// The competitor or list price shown struck through, and where the headline
+  /// discount percentage comes from.
+  compareAtPrice Decimal? @db.Decimal(18, 2)
+  setupFee       Decimal? @db.Decimal(18, 2)
+
+  currency String @default("INR")
+
+  plan ServicePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, termMonths])
+  @@map("service_plan_prices")
+}
+
+/// An enquiry from the "Get a quote" button.
+model QuoteRequest {
+  id        String @id @default(cuid())
+  /// The studio this was sent to.
+  userId    String
+  serviceId String?
+  planId    String?
+  termMonths Int?
+
+  name    String
+  email   String
+  phone   String?
+  company String?
+  message String?
+  budget  String?
+  timeline String?
+
+  status QuoteStatus @default(NEW)
+  /// Where it came from: "public" or "portal".
+  source String @default("public")
+
+  /// The code the visitor had applied when they enquired, and what it saved
+  /// them. Captured at submission because a coupon can expire or change value
+  /// afterwards, and the quote should still reflect what they were shown.
+  couponCode     String?
+  discountAmount Decimal? @db.Decimal(18, 2)
+  quotedPrice    Decimal? @db.Decimal(18, 2)
+
+  /// Set when a signed-in user submitted it, so replies can reach their portal.
+  requestedById String?
+  assignedToId  String?
+  internalNotes String?
+
+  /// Kept for abuse triage — the endpoint is public and rate-limited.
+  ipAddress String?
+  userAgent String?
+
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User     @relation("QuoteOwner", fields: [userId], references: [id], onDelete: Cascade)
+  requestedBy User?    @relation("QuoteRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  assignedTo  User?    @relation("QuoteAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  service     Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, createdAt])
+  @@map("quote_requests")
+}
+
+/// Named for coupons specifically: `DiscountType` is already taken by invoice
+/// line discounts, which carry a NONE case this one has no use for.
+enum CouponDiscountType {
+  PERCENT
+  FIXED
+}
+
+/// What a coupon is allowed to touch.
+enum CouponScope {
+  ALL
+  CATEGORY
+  SERVICE
+}
+
+/// A discount code applied on top of a published price.
+///
+/// Prices in the catalog are the list prices a visitor sees unprompted; the
+/// coupon is what turns them into the offer. Keeping the two apart means the
+/// public page never has to lie about the standard rate, and a promotion can
+/// start or end without rewriting the catalog.
+model Coupon {
+  id     String @id @default(cuid())
+  userId String
+
+  /// Stored uppercase and matched case-insensitively — people type them by hand.
+  code        String
+  description String?
+
+  discountType  CouponDiscountType @default(PERCENT)
+  /// Percent (0-100) or a rupee amount, depending on `discountType`.
+  discountValue Decimal      @db.Decimal(18, 2)
+  /// Ceiling on a percent discount, so a big plan cannot give away too much.
+  maxDiscountAmount Decimal? @db.Decimal(18, 2)
+
+  scope      CouponScope       @default(ALL)
+  categories ServiceCategory[] @default([])
+  serviceIds String[]          @default([])
+
+  /// Only valid on terms at least this long, for "annual plans only" offers.
+  minTermMonths Int?
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  /// Null means unlimited. `usedCount` is incremented when a quote cites it.
+  usageLimit Int?
+  usedCount  Int  @default(0)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+  @@index([userId, isActive])
+  @@map("coupons")
 }
 
 enum ConversationType {

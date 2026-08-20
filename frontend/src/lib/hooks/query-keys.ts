@@ -80,6 +80,16 @@ export const queryKeys = {
   },
   notifications: ['notifications'] as const,
 
+  services: {
+    list: (params: unknown) => ['services', 'list', params] as const,
+    detail: (id: string) => ['services', 'detail', id] as const,
+    stats: ['services', 'stats'] as const,
+    publicCatalog: ['services', 'public'] as const,
+    quotes: (params: unknown) => ['services', 'quotes', params] as const,
+    quote: (id: string) => ['services', 'quote', id] as const,
+    coupons: ['services', 'coupons'] as const,
+  },
+
   chat: {
     conversations: ['chat', 'conversations'] as const,
     conversation: (id: string) => ['chat', 'conversation', id] as const,

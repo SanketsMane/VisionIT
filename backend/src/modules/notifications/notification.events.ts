@@ -46,7 +46,9 @@ export type NotificationEvent =
   | 'support.expiring'
   | 'support.expired'
   // ---- Chat ----------------------------------------------------------------
-  | 'chat.unread';
+  | 'chat.unread'
+  // ---- Services --------------------------------------------------------------
+  | 'quote.received';
 
 /** Where a notification can go. In-app is always on; email is opt-in per event. */
 export type Channel = 'IN_APP' | 'EMAIL';
@@ -309,6 +311,14 @@ export const EVENT_TEMPLATES: Record<NotificationEvent, EventTemplate> = {
   },
 
   // ---- Chat ----------------------------------------------------------------
+  // ---- Services --------------------------------------------------------------
+  'quote.received': {
+    title: (c) => `New enquiry from ${n(c.actorName)}`,
+    body: (c) => `${n(c.title)}${c.reason ? ` — ${n(c.reason)}` : ''}`,
+    subject: (c) => `New enquiry: ${n(c.title)} — ${n(c.actorName)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+
   'chat.unread': {
     title: (c) => `${n(c.count)} unread message${c.count === '1' ? '' : 's'} from ${n(c.actorName)}`,
     body: (c) => n(c.body),

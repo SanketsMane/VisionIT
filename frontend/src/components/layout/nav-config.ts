@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookOpen, Briefcase, FileText, LayoutDashboard, Mail, MessageSquare, PackageCheck, Receipt, Settings, UserCheck, Users, Wallet,
+  BarChart3, BookOpen, Boxes, Briefcase, FileText, LayoutDashboard, Mail, MessageSquare, PackageCheck, Receipt, Settings, UserCheck, Users, Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -32,6 +32,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Projects', href: '/projects', icon: Briefcase, description: 'Your portfolio catalog' },
       { label: 'Clients', href: '/clients', icon: Users, description: 'People you work with' },
+      { label: 'Services', href: '/services', icon: Boxes, description: 'What you sell, and enquiries' },
     ],
   },
   {

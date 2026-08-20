@@ -20,6 +20,7 @@ import portalRoutes from '@modules/portal/portal.routes';
 import notificationRoutes from '@modules/notifications/notification.routes';
 import supportRoutes from '@modules/support/support.routes';
 import chatRoutes from '@modules/chat/chat.routes';
+import serviceRoutes from '@modules/services/services.routes';
 
 const router = Router();
 
@@ -89,5 +90,6 @@ router.use('/portal', portalRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/support', supportRoutes);
 router.use('/chat', chatRoutes);
+router.use('/services', serviceRoutes);
 
 export default router;

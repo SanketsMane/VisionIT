@@ -15,7 +15,8 @@
     "prisma:studio": "prisma studio",
     "db:seed": "tsx src/db/seed/index.ts",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "db:seed:services": "tsx src/db/seed/services-only.ts"
   },
   "engines": {
     "node": ">=20"

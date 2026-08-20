@@ -747,6 +747,40 @@ export const TEMPLATES: Record<NotificationEvent, TemplateFn> = {
     ],
   }),
 
+  // ═══ Services ════════════════════════════════════════════════════════════
+
+  'quote.received': (ctx) => ({
+    subject: `New enquiry: ${n(ctx.title)} — ${n(ctx.actorName)}`,
+    preheader: `${n(ctx.actorName)} asked about ${n(ctx.title)}.`,
+    heading: 'New enquiry',
+    subheading: n(ctx.title),
+    blocks: [
+      {
+        type: 'text',
+        content: `${n(ctx.actorName)} has asked for a quote through your services page.`,
+      },
+      {
+        type: 'facts',
+        rows: [
+          { label: 'From', value: n(ctx.actorName), strong: true },
+          { label: 'Interested in', value: n(ctx.title) },
+          ...(ctx.reason ? [{ label: 'Details', value: ctx.reason }] : []),
+        ],
+      },
+      // Their own words, so the email is worth acting on without opening it.
+      ...(ctx.body
+        ? ([{ type: 'quote', body: ctx.body, attribution: ctx.actorName }] as EmailBlock[])
+        : []),
+      ...action(ctx, 'Open the enquiry'),
+      {
+        type: 'text',
+        size: 'small',
+        content: 'Replying quickly is most of what wins this kind of work.',
+      },
+    ],
+    footerNote: 'You received this because an enquiry was submitted on your services page.',
+  }),
+
   // ═══ Chat ════════════════════════════════════════════════════════════════
 
   'chat.unread': (ctx) => ({
