@@ -22,6 +22,12 @@ build/
 # also swallowed backend/src/docs/ (the Swagger spec).
 /Docs/
 
+# Private file storage — payment proofs, client documents, chat attachments and
+# source-code archives. Never belongs in the repository: these are other
+# people's files, and the whole point of the directory is that reaching one
+# requires an authorised request.
+storage/
+
 # Runtime artefacts
 logs/
 *.log
