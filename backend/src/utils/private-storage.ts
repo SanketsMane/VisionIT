@@ -100,6 +100,19 @@ export const uploadProjectDocument = multer({
   fileFilter: makeFilter([...DOC_TYPES, ...IMAGE_TYPES, ...ARCHIVE_TYPES]),
 });
 
+/**
+ * Chat attachments.
+ *
+ * Filed under the conversation id rather than the project so a leaked path
+ * cannot be walked sideways into another thread, and streamed only through the
+ * download route, which checks participation first.
+ */
+export const uploadChatAttachment = multer({
+  storage: makeStorage('chat'),
+  limits: { fileSize: env.maxUploadBytes * 5, files: 10 },
+  fileFilter: makeFilter([...IMAGE_TYPES, ...VIDEO_TYPES, ...DOC_TYPES, ...ARCHIVE_TYPES, 'audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/ogg']),
+});
+
 /** Source-code archives, which are legitimately large. */
 export const uploadSourceArchive = multer({
   storage: makeStorage('source-code'),

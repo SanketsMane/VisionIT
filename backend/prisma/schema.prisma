@@ -269,6 +269,11 @@ model User {
   bugActivities     BugActivity[]
   bugAttachments    BugAttachment[]
 
+  // ---- Chat ----------------------------------------------------------------
+  conversationsCreated Conversation[]            @relation("ConversationCreator")
+  conversations        ConversationParticipant[]
+  messagesSent         Message[]                 @relation("MessageSender")
+
   uploadedDocuments ProjectDocument[]  @relation("DocumentUploader")
   documentDownloads DocumentDownload[]
 
@@ -478,6 +483,7 @@ model Project {
   announcements   Announcement[]
   activities      ProjectActivity[]
   support         ProjectSupport?
+  conversations   Conversation[]
 
   @@unique([userId, slug])
   @@unique([userId, code])
@@ -485,6 +491,149 @@ model Project {
   @@index([userId, status])
   @@index([userId, featured])
   @@map("projects")
+}
+
+enum ConversationType {
+  /// Two people. Exactly one exists per pair per project.
+  DIRECT
+  /// A named room the client can add their own teammates to.
+  GROUP
+}
+
+enum ParticipantRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  FILE
+  IMAGE
+  /// "X added Y", "X left" — rendered as a centred note, has no sender.
+  SYSTEM
+}
+
+/// A chat thread, always inside one project.
+///
+/// Scoping to a project rather than the workspace is what makes access control
+/// tractable: membership of the project is already resolved on every portal
+/// request, so "can this person be in this conversation?" reduces to a question
+/// the system can already answer.
+model Conversation {
+  id          String           @id @default(cuid())
+  projectId   String
+  type        ConversationType @default(DIRECT)
+  /// Groups only; a direct thread is named after the other person.
+  title       String?
+  avatarUrl   String?
+  createdById String
+
+  /// Denormalised so the conversation list sorts and previews without a
+  /// correlated subquery per row. Written in the same transaction as the
+  /// message, so it cannot drift.
+  lastMessageAt      DateTime?
+  lastMessagePreview String?
+  lastMessageSenderId String?
+
+  isArchived Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project      Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User                      @relation("ConversationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([projectId, lastMessageAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String          @id @default(cuid())
+  conversationId String
+  userId         String
+  role           ParticipantRole @default(MEMBER)
+
+  joinedAt DateTime  @default(now())
+  /// Set instead of deleting the row, so past messages keep a resolvable author
+  /// and the "X left" note still has someone to name.
+  leftAt   DateTime?
+
+  /// Read state as a high-water mark rather than a receipt row per message per
+  /// participant: unread counts and "have they seen it?" both reduce to a
+  /// timestamp comparison, and the table stays O(participants) instead of
+  /// O(messages x participants).
+  lastReadAt      DateTime?
+  lastReadMessageId String?
+  /// Separate mark so the UI can distinguish delivered from read, the way the
+  /// two ticks do.
+  lastDeliveredAt DateTime?
+
+  isMuted Boolean @default(false)
+
+  /// When this person was last told about unread messages here. Stops the
+  /// digest sweep mailing the same backlog every time it runs, and is cleared
+  /// implicitly by reading — a newer message than this mark is notifiable
+  /// again.
+  lastNotifiedAt DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, leftAt])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  /// Null for SYSTEM messages, which nobody sent.
+  senderId       String?
+  type           MessageType @default(TEXT)
+  body           String?
+
+  replyToId String?
+
+  editedAt  DateTime?
+  /// Soft delete so the thread keeps its shape — the bubble becomes
+  /// "This message was deleted" rather than silently vanishing for everyone.
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?               @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  replyTo      Message?            @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]           @relation("MessageReplies")
+  attachments  MessageAttachment[]
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id        String @id @default(cuid())
+  messageId String
+
+  /// Path under the private storage root. Never sent to a client — downloads go
+  /// through a route that checks participation first.
+  storageKey String
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  /// Lets the UI reserve the right box before the image loads.
+  width      Int?
+  height     Int?
+
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
 }
 
 /// Named tiers so the portal can describe what a client is entitled to

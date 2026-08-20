@@ -1,6 +1,5 @@
 import {
-  BarChart3, BookOpen, Briefcase, FileText, LayoutDashboard, Mail,
-  PackageCheck, Receipt, Settings, UserCheck, Users, Wallet,
+  BarChart3, BookOpen, Briefcase, FileText, LayoutDashboard, Mail, MessageSquare, PackageCheck, Receipt, Settings, UserCheck, Users, Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -56,6 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Communication',
     items: [
+      { label: 'Messages', href: '/chat', icon: MessageSquare, description: 'Chat with clients and their teams' },
       { label: 'Email', href: '/email', icon: Mail, description: 'AI-assisted client email' },
     ],
   },

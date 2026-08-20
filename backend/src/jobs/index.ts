@@ -108,6 +108,12 @@ const remindSupportExpiry = async (): Promise<void> => {
   await sweepSupportReminders();
 };
 
+/** Emails people about chat messages they have left unread. */
+const nudgeUnreadChat = async (): Promise<void> => {
+  const { sweepUnreadChat } = await import('@modules/chat/chat.notifier');
+  await sweepUnreadChat();
+};
+
 export const startScheduledJobs = (): void => {
   every(HOUR, sweepOverdueInvoices, true);
   every(6 * HOUR, purgeExpiredTokens, false);
@@ -116,8 +122,11 @@ export const startScheduledJobs = (): void => {
   // Hourly rather than daily so a restart never skips the day a term lapses;
   // `remindersSent` keeps the extra runs from mailing anyone twice.
   every(HOUR, remindSupportExpiry, true);
+  // Every five minutes: the sweep already waits ten before nudging anyone, so
+  // this only controls how promptly that window is noticed.
+  every(5 * 60 * 1000, nudgeUnreadChat, false);
   logger.info(
-    '⏱️  Background jobs scheduled (overdue sweep, token purge, invitation expiry, scheduled email, support expiry)',
+    '⏱️  Background jobs scheduled (overdue sweep, token purge, invitation expiry, scheduled email, support expiry, chat nudges)',
   );
 };
 

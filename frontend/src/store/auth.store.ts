@@ -73,6 +73,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // sign out, and leaving them "logged in" would be worse than a stale
       // server-side session that expires on its own.
       setAccessToken(null);
+      // The socket is authenticated with the token being discarded; leaving it
+      // open would keep pushing this user's messages to the next person to use
+      // the browser.
+      void import('@/lib/hooks/use-chat-socket').then((m) => m.closeChatSocket());
       set({ user: null, isAuthenticated: false, impersonation: null });
     }
   },

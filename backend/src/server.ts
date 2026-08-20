@@ -5,6 +5,7 @@ import { logger } from '@config/logger';
 import { connectDatabase, disconnectDatabase } from '@config/database';
 import { closeAllTransports } from '@config/mailer';
 import { closePdfBrowser } from '@modules/invoices/invoices.pdf';
+import { attachChatGateway, closeChatGateway } from '@modules/chat/chat.gateway';
 import { startScheduledJobs, stopScheduledJobs } from './jobs';
 
 let server: Server | undefined;
@@ -35,7 +36,7 @@ const shutdown = async (signal: string, exitCode = 0): Promise<void> => {
       logger.info('HTTP server closed');
     }
 
-    await Promise.allSettled([closePdfBrowser(), disconnectDatabase()]);
+    await Promise.allSettled([closeChatGateway(), closePdfBrowser(), disconnectDatabase()]);
     closeAllTransports();
 
     clearTimeout(forceExit);
@@ -65,6 +66,10 @@ const bootstrap = async (): Promise<void> => {
 
     server.keepAliveTimeout = 65_000;
     server.headersTimeout = 66_000;
+
+    // Chat rides on the same HTTP server, so it inherits the port, the TLS
+    // termination at nginx and the shutdown path below.
+    attachChatGateway(server);
 
     if (env.ENABLE_CRON) startScheduledJobs();
   } catch (error) {

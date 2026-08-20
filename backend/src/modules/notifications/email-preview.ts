@@ -107,6 +107,12 @@ const OVERRIDES: Partial<Record<string, Partial<TemplateContext>>> = {
   'bug.status_changed': { reason: 'Reproduced on Safari 17.2. Fix is in progress.' },
   'bug.commented': { body: 'Could you confirm whether this happens on mobile Safari too?' },
   'delivery.documents_uploaded': { count: '3' },
+  'chat.unread': {
+    actorName: 'Sanket Patil',
+    count: '3',
+    title: undefined,
+    body: 'Morning — the wallet screen is ready for you to look at whenever you get a minute.',
+  },
 };
 
 /** Renders one template with sample data, ready to serve as `text/html`. */

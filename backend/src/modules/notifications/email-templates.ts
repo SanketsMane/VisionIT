@@ -746,6 +746,42 @@ export const TEMPLATES: Record<NotificationEvent, TemplateFn> = {
       ...action(ctx, 'Open your project'),
     ],
   }),
+
+  // ═══ Chat ════════════════════════════════════════════════════════════════
+
+  'chat.unread': (ctx) => ({
+    subject:
+      ctx.count === '1'
+        ? `New message from ${n(ctx.actorName)}`
+        : `${n(ctx.count)} unread messages from ${n(ctx.actorName)}`,
+    preheader: `${n(ctx.actorName)}: ${n(ctx.body).slice(0, 110)}`,
+    heading:
+      ctx.count === '1'
+        ? `${n(ctx.actorName)} sent you a message`
+        : `You have ${n(ctx.count)} unread messages`,
+    subheading: ctx.title ? `In ${ctx.title}` : projectLine(ctx),
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content:
+          ctx.count === '1'
+            ? `${n(ctx.actorName)} messaged you about ${n(ctx.projectName)} and it's still unread.`
+            : `There ${ctx.count === '1' ? 'is' : 'are'} ${n(ctx.count)} message(s) waiting for you on ${n(ctx.projectName)}.`,
+      },
+      // The message itself, so the email is useful even unopened.
+      ...(ctx.body
+        ? ([{ type: 'quote', body: ctx.body, attribution: ctx.actorName }] as EmailBlock[])
+        : []),
+      ...action(ctx, 'Open the conversation'),
+      {
+        type: 'text',
+        size: 'small',
+        content: "You'll only get this once per conversation until you read it — we won't email you for every message.",
+      },
+    ],
+    footerNote: 'You received this because you have unread messages in a project you are part of.',
+  }),
 };
 
 /** Auth emails, which sit outside the project notification system. */

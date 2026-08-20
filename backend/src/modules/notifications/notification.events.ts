@@ -44,7 +44,9 @@ export type NotificationEvent =
   | 'support.started'
   | 'support.renewed'
   | 'support.expiring'
-  | 'support.expired';
+  | 'support.expired'
+  // ---- Chat ----------------------------------------------------------------
+  | 'chat.unread';
 
 /** Where a notification can go. In-app is always on; email is opt-in per event. */
 export type Channel = 'IN_APP' | 'EMAIL';
@@ -303,6 +305,17 @@ export const EVENT_TEMPLATES: Record<NotificationEvent, EventTemplate> = {
     title: (c) => `Support has ended on ${n(c.projectName)}`,
     body: (c) => `Your technical support cover ended on ${n(c.dueDate)}.`,
     subject: (c) => `Your technical support for ${n(c.projectName)} has ended`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+
+  // ---- Chat ----------------------------------------------------------------
+  'chat.unread': {
+    title: (c) => `${n(c.count)} unread message${c.count === '1' ? '' : 's'} from ${n(c.actorName)}`,
+    body: (c) => n(c.body),
+    subject: (c) =>
+      c.count === '1'
+        ? `New message from ${n(c.actorName)}`
+        : `${n(c.count)} unread messages from ${n(c.actorName)}`,
     channels: ['IN_APP', 'EMAIL'],
   },
 };

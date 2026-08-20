@@ -19,6 +19,7 @@ import uploadRoutes from '@modules/uploads/uploads.routes';
 import portalRoutes from '@modules/portal/portal.routes';
 import notificationRoutes from '@modules/notifications/notification.routes';
 import supportRoutes from '@modules/support/support.routes';
+import chatRoutes from '@modules/chat/chat.routes';
 
 const router = Router();
 
@@ -87,5 +88,6 @@ router.use('/uploads', uploadRoutes);
 router.use('/portal', portalRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/support', supportRoutes);
+router.use('/chat', chatRoutes);
 
 export default router;

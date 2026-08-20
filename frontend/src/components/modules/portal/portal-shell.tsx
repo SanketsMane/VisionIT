@@ -7,7 +7,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Bug, ChevronLeft, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
-  Monitor, Moon, PackageCheck, Receipt, Sun, Users,
+  MessageSquare, Monitor, Moon, PackageCheck, Receipt, Sun, Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import { NotificationBell } from '@/components/layout/notification-bell';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore, type Theme } from '@/store/ui.store';
 import { workspaceApi } from '@/lib/api/portal.api';
+import { chatApi } from '@/lib/api/chat.api';
 import { queryKeys } from '@/lib/hooks/query-keys';
 import { cn } from '@/lib/utils';
 
@@ -77,6 +78,16 @@ export function PortalShell({ children }: { children: ReactNode }) {
     enabled: isAuthenticated && user?.userType === 'CLIENT',
   });
 
+  // Must sit above the early return below — a hook called conditionally shifts
+  // the hook order between renders and React refuses to reconcile it.
+  const unreadQuery = useQuery({
+    queryKey: queryKeys.chat.unread,
+    queryFn: () => chatApi.unread(),
+    enabled: isAuthenticated && user?.userType === 'CLIENT',
+    refetchInterval: 60_000,
+  });
+  const unread = unreadQuery.data?.total ?? 0;
+
   if (!isReady || !isAuthenticated || user?.userType === 'INTERNAL') {
     return (
       <div className="grid min-h-dvh place-items-center bg-background">
@@ -88,6 +99,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const activeProject = dashboard.data?.projects.find((p) => p.id === projectId);
   const studio = dashboard.data?.studio;
   const hasSingleProject = dashboard.data?.projects.length === 1;
+
 
   const themeIcons: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
   const ThemeIcon = themeIcons[theme];
@@ -167,7 +179,38 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className={cn('flex-1 overflow-y-auto scrollbar-slim py-3', collapsed ? 'px-2' : 'px-3')}>
-          {/* Hidden for a single-project client: /portal redirects straight back
+          {/* Messages sit above the project nav because they are not scoped to one
+              project — a client with two projects has one inbox. */}
+          {(() => {
+            const active = pathname.startsWith('/portal/chat');
+            const link = (
+              <Link
+                href="/portal/chat"
+                onClick={() => setMobileOpen(false)}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                  collapsed && 'justify-center px-0',
+                  active
+                    ? 'bg-primary-muted text-primary'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                )}
+              >
+                <span className="relative">
+                  <MessageSquare className="size-4 shrink-0" />
+                  {unread > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 grid min-w-[15px] place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-danger-foreground">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
+                </span>
+                {!collapsed && <span className="flex-1">Messages</span>}
+              </Link>
+            );
+            return collapsed ? <Tooltip content="Messages" side="right">{link}</Tooltip> : link;
+          })()}
+
+        {/* Hidden for a single-project client: /portal redirects straight back
               to their project, so the link would look broken. */}
           {!hasSingleProject &&
             (() => {

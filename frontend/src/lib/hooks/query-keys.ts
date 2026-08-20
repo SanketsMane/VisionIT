@@ -80,6 +80,14 @@ export const queryKeys = {
   },
   notifications: ['notifications'] as const,
 
+  chat: {
+    conversations: ['chat', 'conversations'] as const,
+    conversation: (id: string) => ['chat', 'conversation', id] as const,
+    messages: (id: string) => ['chat', 'messages', id] as const,
+    people: (projectId: string) => ['chat', 'people', projectId] as const,
+    unread: ['chat', 'unread'] as const,
+  },
+
   portal: {
     workspace: (projectId: string) => ['portal', 'workspace', projectId] as const,
     invoices: (projectId: string) => ['portal', 'invoices', projectId] as const,
