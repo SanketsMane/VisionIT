@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <Dialog open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <DialogContent size="sm" className="left-0 top-0 h-dvh max-h-dvh w-64 translate-x-0 translate-y-0 overflow-hidden rounded-none p-0">
-          <Sidebar onNavigate={() => setMobileNavOpen(false)} />
+          <Sidebar expanded onNavigate={() => setMobileNavOpen(false)} />
         </DialogContent>
       </Dialog>
 

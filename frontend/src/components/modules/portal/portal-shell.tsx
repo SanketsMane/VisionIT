@@ -6,12 +6,12 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Activity, Bug, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
+  Activity, Bug, ChevronLeft, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
   Monitor, Moon, PackageCheck, Receipt, Sun, Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Avatar } from '@/components/ui/misc';
+import { Avatar, Tooltip, TooltipProvider } from '@/components/ui/misc';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -55,6 +55,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const logout = useAuthStore((s) => s.logout);
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -101,89 +103,156 @@ export function PortalShell({ children }: { children: ReactNode }) {
     return segment === '' ? pathname === base : pathname.startsWith(`${base}/${segment}`);
   };
 
-  const nav = projectId ? (
-    <nav className="space-y-0.5">
-      {PROJECT_NAV.map((item) => (
-        <Link
-          key={item.segment}
-          href={`/portal/projects/${projectId}${item.segment ? `/${item.segment}` : ''}`}
-          onClick={() => setMobileOpen(false)}
+  const nav = (collapsed: boolean) =>
+    projectId ? (
+      <nav className="space-y-0.5">
+        {PROJECT_NAV.map((item) => {
+          const active = isActive(item.segment);
+          const link = (
+            <Link
+              href={`/portal/projects/${projectId}${item.segment ? `/${item.segment}` : ''}`}
+              onClick={() => setMobileOpen(false)}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                collapsed && 'justify-center px-0',
+                active
+                  ? 'bg-primary-muted text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              )}
+            >
+              <item.icon className={cn('size-4 shrink-0', active && 'text-primary')} />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          );
+
+          // Collapsed, the icon is the only label there is.
+          return collapsed ? (
+            <Tooltip key={item.segment} content={item.label} side="right">
+              {link}
+            </Tooltip>
+          ) : (
+            <div key={item.segment}>{link}</div>
+          );
+        })}
+      </nav>
+    ) : null;
+
+  const sidebar = (collapsed: boolean) => (
+    <TooltipProvider>
+      <div className="flex h-full flex-col">
+        <div
           className={cn(
-            'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-            isActive(item.segment)
-              ? 'bg-primary-muted text-primary'
-              : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+            'flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-4',
+            collapsed && 'justify-center px-2',
           )}
         >
-          <item.icon className="size-4 shrink-0" />
-          <span className="truncate">{item.label}</span>
-        </Link>
-      ))}
-    </nav>
-  ) : null;
+          {studio?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={studio.logoUrl}
+              alt=""
+              className={cn('object-contain', collapsed ? 'size-8' : 'h-8 w-auto max-w-[140px]')}
+            />
+          ) : (
+            <Image src="/logo-mark.png" alt="" width={64} height={64} className="size-8 shrink-0 object-contain" />
+          )}
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold leading-tight">{studio?.name ?? 'Client portal'}</p>
+              <p className="text-[10px] text-muted-foreground">Client portal</p>
+            </div>
+          )}
+        </div>
 
-  const sidebar = (
-    <div className="flex h-full flex-col">
-      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-4">
-        {studio?.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={studio.logoUrl} alt="" className="h-8 w-auto max-w-[140px] object-contain" />
-        ) : (
-          <Image src="/logo-mark.png" alt="" width={64} height={64} className="size-8 object-contain" />
-        )}
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">{studio?.name ?? 'Client portal'}</p>
-          <p className="text-[10px] text-muted-foreground">Client portal</p>
+        <div className={cn('flex-1 overflow-y-auto scrollbar-slim py-3', collapsed ? 'px-2' : 'px-3')}>
+          {/* Hidden for a single-project client: /portal redirects straight back
+              to their project, so the link would look broken. */}
+          {!hasSingleProject &&
+            (() => {
+              const active = pathname === '/portal';
+              const link = (
+                <Link
+                  href="/portal"
+                  onClick={() => setMobileOpen(false)}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'mb-3 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                    collapsed && 'justify-center px-0',
+                    active
+                      ? 'bg-primary-muted text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )}
+                >
+                  <LayoutGrid className="size-4 shrink-0" />
+                  {!collapsed && <span>My projects</span>}
+                </Link>
+              );
+              return collapsed ? (
+                <Tooltip content="My projects" side="right">{link}</Tooltip>
+              ) : (
+                link
+              );
+            })()}
+
+          {activeProject && (
+            <>
+              {/* The project card is all text, so it has nothing to show in a
+                  68px rail — the nav icons below carry the navigation. */}
+              {!collapsed && (
+                <div className="mb-2 rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="truncate text-xs font-semibold">{activeProject.title}</p>
+                  {activeProject.code && (
+                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                      {activeProject.code}
+                    </p>
+                  )}
+                  <Badge variant="primary" size="sm" className="mt-1.5">{activeProject.roleLabel}</Badge>
+                </div>
+              )}
+              {nav(collapsed)}
+            </>
+          )}
+        </div>
+
+        {/* Only the desktop rail can be folded; the mobile drawer is always full width. */}
+        <div className="hidden shrink-0 border-t border-border p-2 lg:block">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+              collapsed && 'justify-center px-0',
+            )}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ChevronLeft className={cn('size-4 transition-transform', collapsed && 'rotate-180')} />
+            {!collapsed && <span>Collapse</span>}
+          </button>
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto scrollbar-slim p-3">
-        {/* Hidden for a single-project client: /portal redirects straight back
-            to their project, so the link would look broken. */}
-        {!hasSingleProject && (
-          <Link
-            href="/portal"
-            onClick={() => setMobileOpen(false)}
-            className={cn(
-              'mb-3 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-              pathname === '/portal'
-                ? 'bg-primary-muted text-primary'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-            )}
-          >
-            <LayoutGrid className="size-4" />
-            My projects
-          </Link>
-        )}
-
-        {activeProject && (
-          <>
-            <div className="mb-2 rounded-lg border border-border bg-muted/40 p-3">
-              <p className="truncate text-xs font-semibold">{activeProject.title}</p>
-              {activeProject.code && (
-                <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-                  {activeProject.code}
-                </p>
-              )}
-              <Badge variant="primary" size="sm" className="mt-1.5">{activeProject.roleLabel}</Badge>
-            </div>
-            {nav}
-          </>
-        )}
-      </div>
-    </div>
+    </TooltipProvider>
   );
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
-      <aside className="hidden w-60 shrink-0 border-r border-border bg-card lg:block">{sidebar}</aside>
+      <aside
+        className={cn(
+          'hidden shrink-0 border-r border-border bg-card transition-[width] duration-200 lg:block',
+          collapsed ? 'w-[68px]' : 'w-60',
+        )}
+      >
+        {sidebar(collapsed)}
+      </aside>
 
       <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
         <DialogContent
           size="sm"
           className="left-0 top-0 h-dvh max-h-dvh w-60 translate-x-0 translate-y-0 overflow-hidden rounded-none p-0"
         >
-          {sidebar}
+          {/* Always expanded: this is a 240px panel, so a folded rail would
+              leave a strip of empty space beside it. */}
+          {sidebar(false)}
         </DialogContent>
       </Dialog>
 

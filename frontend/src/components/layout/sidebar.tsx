@@ -9,10 +9,22 @@ import { useUiStore } from '@/store/ui.store';
 import { Tooltip, TooltipProvider } from '@/components/ui/misc';
 import { NAV_GROUPS } from './nav-config';
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({
+  onNavigate,
+  /**
+   * Forces the full-width rail regardless of the stored preference. The mobile
+   * drawer sets this: it is a 256px panel, so honouring a collapsed desktop
+   * sidebar there would render a 68px strip with a gap beside it.
+   */
+  expanded,
+}: {
+  onNavigate?: () => void;
+  expanded?: boolean;
+}) {
   const pathname = usePathname();
-  const collapsed = useUiStore((state) => state.sidebarCollapsed);
+  const stored = useUiStore((state) => state.sidebarCollapsed);
   const toggle = useUiStore((state) => state.toggleSidebar);
+  const collapsed = expanded ? false : stored;
 
   /** A nested route (/invoices/abc) must still light up its parent nav item. */
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
@@ -88,6 +100,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </nav>
 
+        {!expanded && (
         <div className="shrink-0 border-t border-border p-2">
           <button
             type="button"
@@ -102,6 +115,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             {!collapsed && <span>Collapse</span>}
           </button>
         </div>
+        )}
       </aside>
     </TooltipProvider>
   );
