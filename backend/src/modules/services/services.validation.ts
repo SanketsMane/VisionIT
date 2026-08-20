@@ -1,4 +1,7 @@
-import { CouponDiscountType, CouponScope, PricingModel, QuoteStatus, ServiceCategory } from '@prisma/client';
+import {
+  CouponDiscountType, CouponScope, PaymentMethod, PricingModel,
+  QuoteStatus, ServiceCategory, ServiceOrderStatus,
+} from '@prisma/client';
 import { z } from 'zod';
 
 export const serviceIdSchema = z.object({ id: z.string().min(1) });
@@ -152,3 +155,53 @@ export const listQuotesSchema = z.object({
 export type CreateServiceDto = z.infer<typeof createServiceSchema>;
 export type UpdateServiceDto = z.infer<typeof updateServiceSchema>;
 export type QuoteRequestDto = z.infer<typeof quoteRequestSchema>;
+
+// ── Orders ───────────────────────────────────────────────────────────────────
+
+export const createOrderSchema = z.object({
+  serviceId: z.string().min(1, 'Pick a service'),
+  planId: z.string().min(1).optional(),
+  termMonths: z.coerce.number().int().min(1).max(120).optional(),
+  couponCode: z.string().trim().max(40).optional(),
+  requirements: z.string().trim().max(4000).optional(),
+  /**
+   * Where credentials and bills go. Captured per order because it is often a
+   * personal address rather than the one they sign in with.
+   */
+  deliveryEmail: z.email('Enter the email where we should send everything'),
+  requestQuote: z.boolean().optional(),
+  /** SLAB services: the rupee amount the client wants to top up. */
+  amount: z.coerce.number().positive().max(10_000_000).optional(),
+});
+
+export const submitOrderPaymentSchema = z.object({
+  method: z.nativeEnum(PaymentMethod).default(PaymentMethod.UPI),
+  reference: z.string().trim().max(120).optional(),
+  paidAt: z.coerce.date().default(() => new Date()),
+  note: z.string().trim().max(1000).optional(),
+});
+
+export const setOrderPriceSchema = z.object({
+  price: z.coerce.number().positive('Enter the price you are quoting'),
+  note: z.string().trim().max(1000).optional(),
+});
+
+export const approveOrderSchema = z.object({
+  /** Server details, logins — encrypted at rest and emailed on their own. */
+  credentials: z.string().trim().max(4000).optional(),
+  deliveryNote: z.string().trim().max(2000).optional(),
+  expiresAt: z.coerce.date().optional(),
+});
+
+export const rejectOrderSchema = z.object({
+  reason: z.string().trim().min(3, 'Tell them what was wrong').max(1000),
+});
+
+export const orderMessageSchema = z.object({
+  body: z.string().trim().min(1, 'Write a message').max(4000),
+  isInternal: z.boolean().default(false),
+});
+
+export const listOrdersSchema = z.object({
+  status: z.nativeEnum(ServiceOrderStatus).optional(),
+});

@@ -48,7 +48,14 @@ export type NotificationEvent =
   // ---- Chat ----------------------------------------------------------------
   | 'chat.unread'
   // ---- Services --------------------------------------------------------------
-  | 'quote.received';
+  | 'quote.received'
+  | 'order.placed'
+  | 'order.quote_requested'
+  | 'order.quoted'
+  | 'order.payment_submitted'
+  | 'order.approved'
+  | 'order.rejected'
+  | 'order.message';
 
 /** Where a notification can go. In-app is always on; email is opt-in per event. */
 export type Channel = 'IN_APP' | 'EMAIL';
@@ -316,6 +323,49 @@ export const EVENT_TEMPLATES: Record<NotificationEvent, EventTemplate> = {
     title: (c) => `New enquiry from ${n(c.actorName)}`,
     body: (c) => `${n(c.title)}${c.reason ? ` — ${n(c.reason)}` : ''}`,
     subject: (c) => `New enquiry: ${n(c.title)} — ${n(c.actorName)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+
+  'order.placed': {
+    title: (c) => `New order from ${n(c.actorName)}`,
+    body: (c) => `${n(c.title)} — ${n(c.amount)}. Waiting on payment.`,
+    subject: (c) => `New order ${n(c.invoiceNumber)} — ${n(c.title)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'order.quote_requested': {
+    title: (c) => `${n(c.actorName)} asked for a price`,
+    body: (c) => `${n(c.title)} — send them a quote to move it forward.`,
+    subject: (c) => `Quote requested: ${n(c.title)} — ${n(c.actorName)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'order.quoted': {
+    title: (c) => `Your quote is ready — ${n(c.amount)}`,
+    body: (c) => `${n(c.title)} is priced at ${n(c.amount)}. You can pay whenever you are ready.`,
+    subject: (c) => `Your quote for ${n(c.title)} — ${n(c.amount)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'order.payment_submitted': {
+    title: (c) => `${n(c.actorName)} submitted a payment`,
+    body: (c) => `${n(c.amount)} for ${n(c.title)}. Verify it to activate the service.`,
+    subject: (c) => `Payment to verify: ${n(c.invoiceNumber)} — ${n(c.amount)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'order.approved': {
+    title: (c) => `${n(c.title)} is active`,
+    body: () => 'Your payment has been verified and your service is live.',
+    subject: (c) => `Your ${n(c.title)} is ready`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'order.rejected': {
+    title: (c) => `We could not verify your payment for ${n(c.title)}`,
+    body: (c) => n(c.reason),
+    subject: (c) => `We need another look at your payment — ${n(c.invoiceNumber)}`,
+    channels: ['IN_APP', 'EMAIL'],
+  },
+  'order.message': {
+    title: (c) => `${n(c.actorName)} replied on ${n(c.title)}`,
+    body: (c) => n(c.body),
+    subject: (c) => `New message on ${n(c.title)}`,
     channels: ['IN_APP', 'EMAIL'],
   },
 

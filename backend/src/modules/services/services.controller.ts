@@ -65,6 +65,15 @@ export const ServicesController = {
     return sendCreated(res, data, 'Thanks — we will be in touch shortly');
   }),
 
+  /**
+   * The catalog for a signed-in client. Same data as the public one — the
+   * distinction is only that this route sits behind authentication, so it can
+   * be reached from the portal without exposing anything extra.
+   */
+  clientCatalog: asyncHandler(async (_req: Request, res: Response) =>
+    sendSuccess(res, await ServicesService.publicCatalog(await resolveOwner()), 'Services fetched'),
+  ),
+
   // ── Studio ───────────────────────────────────────────────────────────────
 
   list: asyncHandler(async (req: Request, res: Response) => {

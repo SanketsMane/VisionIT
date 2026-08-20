@@ -2,11 +2,20 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticate, validate } from '@middlewares/index';
 import { requireInternal } from '@middlewares/project-access.middleware';
+import { uploadOrderProof } from '@utils/private-storage';
 import { ServicesController } from './services.controller';
+import { OrdersController, requireOwnOrder } from './orders.controller';
 import {
+  approveOrderSchema,
   couponFields,
   couponPreviewSchema,
+  createOrderSchema,
   createServiceSchema,
+  listOrdersSchema,
+  orderMessageSchema,
+  rejectOrderSchema,
+  setOrderPriceSchema,
+  submitOrderPaymentSchema,
   listQuotesSchema,
   listServicesSchema,
   quoteRequestSchema,
@@ -49,9 +58,49 @@ router.get('/public/:slug', validate({ params: serviceSlugSchema }), ServicesCon
 router.post('/public/coupon', couponLimiter, validate({ body: couponPreviewSchema }), ServicesController.previewCoupon);
 router.post('/public/quote', quoteLimiter, validate({ body: quoteRequestSchema }), ServicesController.submitQuote);
 
-// ── Studio ─────────────────────────────────────────────────────────────────
+// ── Client-facing. Authenticated, but NOT studio-only: these are the
+//    endpoints a portal user calls to browse and buy. ───────────────────────
 router.use(authenticate);
+
+/** The catalog as a client sees it — active and public entries only. */
+router.get('/catalog', ServicesController.clientCatalog);
+router.get('/catalog/:slug', validate({ params: serviceSlugSchema }), ServicesController.publicService);
+router.post('/catalog/coupon', couponLimiter, validate({ body: couponPreviewSchema }), ServicesController.previewCoupon);
+
+router.get('/payment-details', OrdersController.paymentDetails);
+
+router.post('/orders', validate({ body: createOrderSchema }), OrdersController.create);
+router.get('/my-orders', OrdersController.mine);
+router.get('/my-orders/:id', validate({ params: serviceIdSchema }), OrdersController.mineById);
+
+/**
+ * `requireOwnOrder` runs before the upload middleware: multer writes the file
+ * while parsing, so ownership has to be settled first.
+ */
+router.post(
+  '/my-orders/:id/payment',
+  validate({ params: serviceIdSchema }),
+  requireOwnOrder,
+  uploadOrderProof.single('proof'),
+  validate({ body: submitOrderPaymentSchema }),
+  OrdersController.submitPayment,
+);
+
+// Both sides use these; the service decides what each may see.
+router.get('/orders/:id/messages', validate({ params: serviceIdSchema }), OrdersController.messages);
+router.post('/orders/:id/messages', validate({ params: serviceIdSchema, body: orderMessageSchema }), OrdersController.addMessage);
+router.get('/orders/:id/proof', validate({ params: serviceIdSchema }), OrdersController.proof);
+
+// ── Studio only ────────────────────────────────────────────────────────────
 router.use(requireInternal);
+
+router.get('/orders', validate({ query: listOrdersSchema }), OrdersController.list);
+router.get('/orders/:id', validate({ params: serviceIdSchema }), OrdersController.getById);
+router.post('/orders/:id/price', validate({ params: serviceIdSchema, body: setOrderPriceSchema }), OrdersController.setPrice);
+router.post('/orders/:id/approve', validate({ params: serviceIdSchema, body: approveOrderSchema }), OrdersController.approve);
+router.post('/orders/:id/reject', validate({ params: serviceIdSchema, body: rejectOrderSchema }), OrdersController.reject);
+router.get('/orders/:id/credentials', validate({ params: serviceIdSchema }), OrdersController.credentials);
+router.patch('/orders/:id/notes', validate({ params: serviceIdSchema }), OrdersController.notes);
 
 router.get('/', validate({ query: listServicesSchema }), ServicesController.list);
 router.get('/stats', ServicesController.stats);

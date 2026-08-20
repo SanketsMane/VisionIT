@@ -781,6 +781,141 @@ export const TEMPLATES: Record<NotificationEvent, TemplateFn> = {
     footerNote: 'You received this because an enquiry was submitted on your services page.',
   }),
 
+  // ═══ Orders ══════════════════════════════════════════════════════════════
+
+  'order.placed': (ctx) => ({
+    subject: `New order ${n(ctx.invoiceNumber)} — ${n(ctx.title)}`,
+    preheader: `${n(ctx.actorName)} ordered ${n(ctx.title)} for ${n(ctx.amount)}.`,
+    heading: 'New order',
+    subheading: n(ctx.title),
+    blocks: [
+      { type: 'text', content: `${n(ctx.actorName)} has placed an order and will pay shortly.` },
+      { type: 'amount', label: 'Order total', value: n(ctx.amount), caption: n(ctx.invoiceNumber) },
+      ...(ctx.body ? ([{ type: 'quote', body: ctx.body, attribution: ctx.actorName }] as EmailBlock[]) : []),
+      ...action(ctx, 'Open the order'),
+    ],
+  }),
+
+  'order.quote_requested': (ctx) => ({
+    subject: `Quote requested: ${n(ctx.title)} — ${n(ctx.actorName)}`,
+    preheader: `${n(ctx.actorName)} needs a price for ${n(ctx.title)}.`,
+    heading: 'Someone needs a price',
+    subheading: n(ctx.title),
+    blocks: [
+      {
+        type: 'text',
+        content: `${n(ctx.actorName)} asked what ${n(ctx.title)} would cost. Setting a price sends it straight back to them, ready to pay.`,
+      },
+      ...(ctx.body
+        ? ([
+            { type: 'heading', level: 3, content: 'What they need' },
+            { type: 'quote', body: ctx.body, attribution: ctx.actorName },
+          ] as EmailBlock[])
+        : []),
+      ...action(ctx, 'Set a price'),
+    ],
+  }),
+
+  'order.quoted': (ctx) => ({
+    subject: `Your quote for ${n(ctx.title)} — ${n(ctx.amount)}`,
+    preheader: `${n(ctx.title)} comes to ${n(ctx.amount)}.`,
+    heading: 'Your quote is ready',
+    subheading: n(ctx.title),
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      { type: 'text', content: 'We have put a price together for you. Nothing is committed until you pay.' },
+      { type: 'amount', tone: 'success', label: 'Your price', value: n(ctx.amount), caption: n(ctx.invoiceNumber) },
+      ...(ctx.body ? ([{ type: 'callout', tone: 'info', body: ctx.body }] as EmailBlock[]) : []),
+      ...action(ctx, 'View and pay'),
+      {
+        type: 'text',
+        size: 'small',
+        content: 'This price is for you specifically. Reply if anything about the scope has changed.',
+      },
+    ],
+  }),
+
+  'order.payment_submitted': (ctx) => ({
+    subject: `Payment to verify: ${n(ctx.invoiceNumber)} — ${n(ctx.amount)}`,
+    preheader: `${n(ctx.actorName)} says they have paid ${n(ctx.amount)}.`,
+    heading: 'A payment needs verifying',
+    subheading: n(ctx.title),
+    blocks: [
+      {
+        type: 'text',
+        content: `${n(ctx.actorName)} has submitted proof of payment. Nothing is activated until you confirm it.`,
+      },
+      { type: 'amount', label: 'Amount', value: n(ctx.amount), caption: n(ctx.invoiceNumber) },
+      {
+        type: 'facts',
+        rows: [
+          ...(ctx.method ? [{ label: 'Method', value: ctx.method }] : []),
+          ...(ctx.reference ? [{ label: 'Reference', value: ctx.reference }] : []),
+        ],
+      },
+      ...action(ctx, 'Verify the payment'),
+    ],
+  }),
+
+  'order.approved': (ctx) => ({
+    subject: `Your ${n(ctx.title)} is ready`,
+    preheader: 'Payment verified — your service is live.',
+    heading: 'You are all set',
+    subheading: n(ctx.title),
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content: `We have verified your payment and ${n(ctx.title)} is now active. Thank you.`,
+      },
+      {
+        type: 'facts',
+        rows: [
+          { label: 'Order', value: n(ctx.invoiceNumber) },
+          ...(ctx.amount ? [{ label: 'Paid', value: ctx.amount, strong: true }] : []),
+        ],
+      },
+      ...(ctx.reason === 'credentials'
+        ? ([{
+            type: 'callout',
+            tone: 'info',
+            title: 'Your credentials are on their way',
+            body: 'They are in a separate email to the address you gave us, so they are easy to find and easy to keep private.',
+          }] as EmailBlock[])
+        : []),
+      ...(ctx.body ? ([{ type: 'text', content: ctx.body }] as EmailBlock[]) : []),
+      ...action(ctx, 'View your order'),
+    ],
+  }),
+
+  'order.rejected': (ctx) => ({
+    subject: `We need another look at your payment — ${n(ctx.invoiceNumber)}`,
+    preheader: `We could not match your payment for ${n(ctx.title)}.`,
+    heading: "We couldn't verify that payment",
+    subheading: n(ctx.title),
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content: `We were not able to match your payment for ${n(ctx.title)} against our records. This is usually a reference number or a screenshot we cannot read, rather than anything wrong on your side.`,
+      },
+      { type: 'callout', tone: 'warning', title: 'What we found', body: n(ctx.reason) },
+      { type: 'text', content: 'Submit it again with the corrected details and it goes straight back into our queue.' },
+      ...action(ctx, 'Submit again'),
+    ],
+  }),
+
+  'order.message': (ctx) => ({
+    subject: `New message on ${n(ctx.title)}`,
+    preheader: `${n(ctx.actorName)}: ${n(ctx.body).slice(0, 110)}`,
+    heading: `${n(ctx.actorName)} replied`,
+    subheading: n(ctx.title),
+    blocks: [
+      ...(ctx.body ? ([{ type: 'quote', body: ctx.body, attribution: ctx.actorName }] as EmailBlock[]) : []),
+      ...action(ctx, 'Open the order'),
+    ],
+  }),
+
   // ═══ Chat ════════════════════════════════════════════════════════════════
 
   'chat.unread': (ctx) => ({
@@ -819,7 +954,12 @@ export const TEMPLATES: Record<NotificationEvent, TemplateFn> = {
 };
 
 /** Auth emails, which sit outside the project notification system. */
-export type AuthEmail = 'auth.password_reset' | 'auth.password_changed' | 'auth.welcome';
+export type AuthEmail =
+  | 'auth.password_reset'
+  | 'auth.password_changed'
+  | 'auth.welcome'
+  /** Service credentials. Sent to whatever address the client nominated. */
+  | 'order.credentials';
 
 export const AUTH_TEMPLATES: Record<AuthEmail, TemplateFn> = {
   'auth.password_reset': (ctx) => ({
@@ -861,6 +1001,32 @@ export const AUTH_TEMPLATES: Record<AuthEmail, TemplateFn> = {
       },
     ],
     footerNote: 'You received this because your account password changed.',
+  }),
+
+  'order.credentials': (ctx) => ({
+    subject: `Your ${n(ctx.title)} access details`,
+    preheader: 'Your login details are inside. Keep this email safe.',
+    heading: 'Your access details',
+    subheading: n(ctx.title),
+    blocks: [
+      { type: 'text', content: greeting(ctx) },
+      {
+        type: 'text',
+        content: `Your ${n(ctx.title)} is live. Here is everything you need to get in.`,
+      },
+      // Monospaced and unwrapped: a password broken across lines by an email
+      // client is a support ticket waiting to happen.
+      { type: 'code', label: 'Access details', value: n(ctx.body) },
+      ...(ctx.reason ? ([{ type: 'text', content: ctx.reason }] as EmailBlock[]) : []),
+      {
+        type: 'callout',
+        tone: 'warning',
+        title: 'Change the password on first login',
+        body: 'These details were sent by email, which is not a secure channel. Set your own password as soon as you sign in, and do not forward this message.',
+      },
+      ...action(ctx, 'View your order'),
+    ],
+    footerNote: 'You received this because you ordered a service from us.',
   }),
 
   'auth.welcome': (ctx) => ({

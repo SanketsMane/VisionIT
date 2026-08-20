@@ -2,10 +2,11 @@ import { del, get, getList, patch, post } from './client';
 
 export type ServiceCategory =
   | 'WEB_DEVELOPMENT' | 'ANDROID_APP' | 'IOS_APP' | 'AI_SOFTWARE' | 'FINTECH_PLATFORM'
-  | 'VPS_HOSTING' | 'WINDOWS_HOSTING' | 'SOCIAL_MEDIA' | 'DIGITAL_MARKETING'
-  | 'SEO' | 'LEAD_GENERATION' | 'OTHER';
+  | 'TRADING_PLATFORM' | 'ALGO_TRADING' | 'AI_AGENT' | 'AUTOMATION' | 'MEDIA_GENERATION'
+  | 'SMS_SERVICE' | 'VPS_HOSTING' | 'WINDOWS_HOSTING' | 'SOCIAL_MEDIA'
+  | 'DIGITAL_MARKETING' | 'SEO' | 'LEAD_GENERATION' | 'OTHER';
 
-export type PricingModel = 'QUOTE_ONLY' | 'FROM' | 'FIXED' | 'TIERED';
+export type PricingModel = 'QUOTE_ONLY' | 'FROM' | 'FIXED' | 'TIERED' | 'SLAB';
 export type QuoteStatus = 'NEW' | 'CONTACTED' | 'QUOTED' | 'WON' | 'LOST';
 
 export interface PlanPrice {
@@ -31,6 +32,13 @@ export interface ServicePlan {
   prices: PlanPrice[];
 }
 
+export interface PriceSlab {
+  minAmount: number;
+  maxAmount: number | null;
+  unitPrice: number;
+  validityLabel: string | null;
+}
+
 export interface Service {
   id: string;
   slug: string;
@@ -51,7 +59,11 @@ export interface Service {
   isFeatured: boolean;
   isPublic: boolean;
   sortOrder: number;
+  minOrderAmount: number | null;
+  unitLabel: string | null;
+  priceNote: string | null;
   plans: ServicePlan[];
+  slabs: PriceSlab[];
 }
 
 /** One plan+term with a coupon applied. */
@@ -157,6 +169,12 @@ export const CATEGORY_LABELS: Record<ServiceCategory, string> = {
   IOS_APP: 'iOS',
   AI_SOFTWARE: 'AI Software',
   FINTECH_PLATFORM: 'Fintech',
+  TRADING_PLATFORM: 'Trading Platforms',
+  ALGO_TRADING: 'Algo Trading',
+  AI_AGENT: 'AI Agents',
+  AUTOMATION: 'Automation',
+  MEDIA_GENERATION: 'AI Media',
+  SMS_SERVICE: 'Bulk SMS',
   VPS_HOSTING: 'VPS Hosting',
   WINDOWS_HOSTING: 'Windows Hosting',
   SOCIAL_MEDIA: 'Social Media',
@@ -175,9 +193,148 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
 };
 
 /** Term labels, so "24" never reaches a card as a bare number. */
+/**
+ * Mirrors the server's band selection so the calculator can respond as the
+ * client types. The server re-derives it on submit — this is a preview, never
+ * the source of the price.
+ */
+export const quoteFromSlabs = (
+  slabs: PriceSlab[],
+  amount: number,
+): { unitPrice: number; quantity: number; validityLabel: string | null } | null => {
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  const ordered = [...slabs].sort((a, b) => a.minAmount - b.minAmount);
+  let match: PriceSlab | null = null;
+  for (const slab of ordered) {
+    if (amount >= slab.minAmount && amount <= (slab.maxAmount ?? Infinity)) match = slab;
+  }
+  if (!match) return null;
+  return {
+    unitPrice: match.unitPrice,
+    // Floored, like the server — never promise a credit that will not arrive.
+    quantity: Math.floor(amount / match.unitPrice),
+    validityLabel: match.validityLabel,
+  };
+};
+
 export const TERM_LABELS: Record<number, string> = {
   1: 'Monthly',
   12: '12 months',
   24: '24 months',
   48: '48 months',
+};
+
+// ── Orders ───────────────────────────────────────────────────────────────────
+
+export type ServiceOrderStatus =
+  | 'QUOTE_REQUESTED' | 'QUOTED' | 'AWAITING_PAYMENT'
+  | 'PAYMENT_SUBMITTED' | 'ACTIVE' | 'REJECTED' | 'CANCELLED';
+
+export interface ServiceOrder {
+  id: string;
+  orderNumber: string;
+  status: ServiceOrderStatus;
+  service: { id: string; name: string; slug: string; category: ServiceCategory; icon: string | null; accentColor: string | null };
+  plan: { id: string; name: string; slug: string; specs: unknown } | null;
+  termMonths: number | null;
+  quantity: number | null;
+  unitPrice: number | null;
+  validityLabel: string | null;
+  listPrice: number;
+  couponCode: string | null;
+  discountAmount: number | null;
+  finalPrice: number | null;
+  currency: string;
+  requirements: string | null;
+  deliveryEmail: string;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  paidAt: string | null;
+  hasProof: boolean;
+  proofFilename: string | null;
+  submittedAt: string | null;
+  rejectionReason: string | null;
+  deliveryNote: string | null;
+  deliveredAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  canPay: boolean;
+  awaitingQuote: boolean;
+  // Studio-only.
+  customPrice?: number | null;
+  internalNotes?: string | null;
+  clientUser?: { id: string; name: string; email: string };
+  client?: { id: string; name: string; companyName: string | null } | null;
+  hasCredentials?: boolean;
+}
+
+export interface PaymentDetails {
+  businessName: string | null;
+  supportEmail?: string | null;
+  supportPhone?: string | null;
+  methods: { type: string; label: string; rows: { label: string; value: string }[] }[];
+}
+
+export interface OrderMessage {
+  id: string;
+  body: string;
+  isInternal: boolean;
+  createdAt: string;
+  author: { id: string; name: string; avatarUrl: string | null; userType: string };
+}
+
+export const ordersApi = {
+  // Client.
+  catalog: () => get<Service[]>('/services/catalog'),
+  service: (slug: string) => get<Service>(`/services/catalog/${slug}`),
+  applyCoupon: (code: string, serviceId?: string) =>
+    post<AppliedCoupon>('/services/catalog/coupon', { code, serviceId }),
+  paymentDetails: () => get<PaymentDetails>('/services/payment-details'),
+  place: (payload: Record<string, unknown>) => post<ServiceOrder>('/services/orders', payload),
+  mine: () => get<ServiceOrder[]>('/services/my-orders'),
+  mineById: (id: string) => get<ServiceOrder>(`/services/my-orders/${id}`),
+
+  async submitPayment(
+    id: string,
+    payload: { method: string; reference?: string; paidAt: string; proof?: File },
+  ) {
+    const form = new FormData();
+    form.append('method', payload.method);
+    if (payload.reference) form.append('reference', payload.reference);
+    form.append('paidAt', payload.paidAt);
+    if (payload.proof) form.append('proof', payload.proof);
+    // Content-Type is left to the browser so the multipart boundary survives.
+    return post<ServiceOrder>(`/services/my-orders/${id}/payment`, form, {
+      headers: { 'Content-Type': undefined } as never,
+    });
+  },
+
+  // Studio.
+  list: (status?: ServiceOrderStatus) =>
+    get<{ items: ServiceOrder[]; byStatus: Record<string, number> }>('/services/orders', {
+      params: status ? { status } : {},
+    }),
+  getById: (id: string) => get<ServiceOrder>(`/services/orders/${id}`),
+  setPrice: (id: string, price: number, note?: string) =>
+    post<ServiceOrder>(`/services/orders/${id}/price`, { price, note }),
+  approve: (id: string, payload: { credentials?: string; deliveryNote?: string }) =>
+    post<ServiceOrder>(`/services/orders/${id}/approve`, payload),
+  reject: (id: string, reason: string) => post<ServiceOrder>(`/services/orders/${id}/reject`, { reason }),
+  credentials: (id: string) => get<{ credentials: string | null }>(`/services/orders/${id}/credentials`),
+
+  // Both sides.
+  messages: (id: string) => get<OrderMessage[]>(`/services/orders/${id}/messages`),
+  sendMessage: (id: string, body: string, isInternal = false) =>
+    post<OrderMessage>(`/services/orders/${id}/messages`, { body, isInternal }),
+  proofUrl: (id: string) => `/services/orders/${id}/proof`,
+};
+
+export const ORDER_STATUS_LABELS: Record<ServiceOrderStatus, string> = {
+  QUOTE_REQUESTED: 'Awaiting quote',
+  QUOTED: 'Quote ready',
+  AWAITING_PAYMENT: 'Awaiting payment',
+  PAYMENT_SUBMITTED: 'Verifying payment',
+  ACTIVE: 'Active',
+  REJECTED: 'Payment not verified',
+  CANCELLED: 'Cancelled',
 };

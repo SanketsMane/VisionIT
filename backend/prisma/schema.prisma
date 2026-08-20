@@ -272,6 +272,10 @@ model User {
   // ---- Services --------------------------------------------------------------
   services          Service[]
   coupons           Coupon[]
+  serviceOrders     ServiceOrder[] @relation("OrderVendor")
+  placedOrders      ServiceOrder[] @relation("OrderClient")
+  reviewedOrders    ServiceOrder[] @relation("OrderReviewer")
+  orderMessages     ServiceOrderMessage[]
   quoteRequests     QuoteRequest[] @relation("QuoteRequester")
   ownedQuotes       QuoteRequest[] @relation("QuoteOwner")
   assignedQuotes    QuoteRequest[] @relation("QuoteAssignee")
@@ -402,6 +406,7 @@ model Client {
   @@index([userId, status])
   @@index([userId, name])
   @@map("clients")
+  serviceOrders ServiceOrder[]
 }
 
 model ClientContact {
@@ -506,6 +511,12 @@ enum ServiceCategory {
   IOS_APP
   AI_SOFTWARE
   FINTECH_PLATFORM
+  TRADING_PLATFORM
+  ALGO_TRADING
+  AI_AGENT
+  AUTOMATION
+  MEDIA_GENERATION
+  SMS_SERVICE
   VPS_HOSTING
   WINDOWS_HOSTING
   SOCIAL_MEDIA
@@ -525,6 +536,9 @@ enum PricingModel {
   FIXED
   /// Has plans with per-term prices, e.g. the VPS tiers.
   TIERED
+  /// Priced by how much you spend: the client enters an amount and the rate
+  /// improves as it rises. Used for SMS credits.
+  SLAB
 }
 
 enum QuoteStatus {
@@ -561,6 +575,13 @@ model Service {
   /// Rendered after the price: "/mo", "/project", "per campaign".
   priceSuffix   String?
 
+  /// SLAB pricing only: the smallest top-up accepted, and what a unit is
+  /// called so the calculator can say "2,352 SMS" rather than "2,352 units".
+  minOrderAmount Decimal? @db.Decimal(18, 2)
+  unitLabel      String?
+  /// A short line under the price — "No DLT registration required" and the like.
+  priceNote      String?
+
   isActive   Boolean @default(true)
   isFeatured Boolean @default(false)
   /// Whether it appears on the public catalog as well as internally.
@@ -577,10 +598,37 @@ model Service {
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   plans  ServicePlan[]
   quotes QuoteRequest[]
+  orders ServiceOrder[]
+  slabs  ServicePriceSlab[]
 
   @@unique([userId, slug])
   @@index([userId, category])
   @@map("services")
+}
+
+/// A volume band: spend this much, get this rate.
+///
+/// A row per band rather than a formula, for the same reason plan prices are
+/// rows — the breakpoints are a commercial decision that moves, and the studio
+/// should be able to change them without a deploy.
+model ServicePriceSlab {
+  id        String @id @default(cuid())
+  serviceId String
+
+  /// Inclusive floor. The top band leaves `maxAmount` null for "and above".
+  minAmount Decimal  @db.Decimal(18, 2)
+  maxAmount Decimal? @db.Decimal(18, 2)
+  /// Cost of one unit at this band — ₹0.85 per SMS, and so on.
+  unitPrice Decimal  @db.Decimal(18, 4)
+  /// Free text because "8 Years" is a marketing promise, not a computed date.
+  validityLabel String?
+
+  sortOrder Int @default(0)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, minAmount])
+  @@map("service_price_slabs")
 }
 
 /// A tier within a service — KVM 1, KVM 2, and so on.
@@ -606,6 +654,7 @@ model ServicePlan {
 
   service Service            @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   prices  ServicePlanPrice[]
+  orders  ServiceOrder[]
 
   @@unique([serviceId, slug])
   @@map("service_plans")
@@ -691,6 +740,140 @@ model QuoteRequest {
 
 /// Named for coupons specifically: `DiscountType` is already taken by invoice
 /// line discounts, which carry a NONE case this one has no use for.
+/// Where an order sits between "I want this" and "it is running".
+enum ServiceOrderStatus {
+  /// Client asked for a price on something that is not publicly priced.
+  QUOTE_REQUESTED
+  /// The studio has set a price for this client specifically.
+  QUOTED
+  /// Price is known and agreed; waiting for the client to pay.
+  AWAITING_PAYMENT
+  /// Client has uploaded proof; waiting on the studio to verify it.
+  PAYMENT_SUBMITTED
+  /// Paid, verified, and the credentials or bill have gone out.
+  ACTIVE
+  /// Proof did not check out. The client can submit again.
+  REJECTED
+  CANCELLED
+}
+
+/// A client buying a service.
+///
+/// Deliberately not an Invoice: an invoice is a document raised for work already
+/// agreed, whereas this is the request that precedes it — including the case
+/// where nobody knows the price yet. An invoice is raised *from* an order once
+/// the money is verified.
+model ServiceOrder {
+  id          String @id @default(cuid())
+  /// Human-readable, quoted in emails and by the client on the phone.
+  orderNumber String
+
+  /// The studio being bought from.
+  userId       String
+  /// The portal account that placed it.
+  clientUserId String
+  /// The business record, when the client is already on the books.
+  clientId     String?
+
+  serviceId  String
+  planId     String?
+  termMonths Int?
+
+  /// What the catalog said at the time. Frozen here because published prices
+  /// move and the order must still show what was agreed.
+  listPrice      Decimal  @db.Decimal(18, 2)
+  couponCode     String?
+  discountAmount Decimal? @db.Decimal(18, 2)
+  /// Set by the studio after a quote — a price for this client only.
+  customPrice    Decimal? @db.Decimal(18, 2)
+  /// What they actually have to pay. Resolved on write so nothing downstream
+  /// has to re-derive it from three nullable columns.
+  finalPrice     Decimal? @db.Decimal(18, 2)
+  currency       String   @default("INR")
+
+  /// SLAB orders: how many units the amount bought, at what rate, and how long
+  /// they last. Frozen at purchase — the bands move, and a top-up bought last
+  /// year keeps the rate it was sold at.
+  quantity      Int?
+  unitPrice     Decimal? @db.Decimal(18, 4)
+  validityLabel String?
+
+  /// What the client told us they need.
+  requirements String?
+  /// Where credentials and bills should be sent. Often a personal Gmail rather
+  /// than the address they signed in with, so it is captured per order.
+  deliveryEmail String
+
+  // ---- Payment proof -------------------------------------------------------
+  paymentMethod    PaymentMethod?
+  paymentReference String?
+  paidAt           DateTime?
+  /// Private storage key. Never a public URL.
+  proofKey         String?
+  proofFilename    String?
+  proofMimeType    String?
+  submittedAt      DateTime?
+
+  // ---- Review --------------------------------------------------------------
+  status          ServiceOrderStatus @default(AWAITING_PAYMENT)
+  reviewedById    String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  /// The invoice raised once the money was verified.
+  invoiceId       String?
+
+  // ---- Delivery ------------------------------------------------------------
+  /// Server credentials and the like, encrypted at rest with the same key that
+  /// protects stored SMTP passwords. Held so the studio can resend, and
+  /// decrypted only when it is being shown or emailed.
+  credentialsEncrypted String?
+  deliveryNote         String?
+  deliveredAt          DateTime?
+  /// When the term ends, for renewals.
+  expiresAt            DateTime?
+
+  internalNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User                  @relation("OrderVendor", fields: [userId], references: [id], onDelete: Cascade)
+  clientUser User                  @relation("OrderClient", fields: [clientUserId], references: [id], onDelete: Cascade)
+  reviewedBy User?                 @relation("OrderReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  client     Client?               @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  service    Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  plan       ServicePlan?          @relation(fields: [planId], references: [id], onDelete: SetNull)
+  messages   ServiceOrderMessage[]
+
+  @@unique([userId, orderNumber])
+  @@index([userId, status, createdAt])
+  @@index([clientUserId, createdAt])
+  @@map("service_orders")
+}
+
+/// Questions on an order — the "ask for help" thread.
+///
+/// Separate from project chat because an order is not a project: a client
+/// buying hosting may have no project at all, and the studio wants these
+/// beside the order rather than buried in a conversation list.
+model ServiceOrderMessage {
+  id      String @id @default(cuid())
+  orderId String
+
+  authorId String
+  body     String
+  /// Studio-only notes share the thread but never reach the client.
+  isInternal Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  order  ServiceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("service_order_messages")
+}
+
 enum CouponDiscountType {
   PERCENT
   FIXED

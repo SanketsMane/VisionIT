@@ -7,7 +7,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Bug, ChevronLeft, FileText, FolderOpen, LayoutGrid, LogOut, Menu,
-  MessageSquare, Monitor, Moon, PackageCheck, Receipt, Sun, Users,
+  MessageSquare, Monitor, Moon, PackageCheck, Receipt, ShoppingBag, Sun, Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,19 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  /**
+   * The project whose nav the sidebar shows.
+   *
+   * Global pages like Messages have no projectId in the URL, and keying the nav
+   * off the URL alone made the whole sidebar collapse to one link the moment a
+   * client opened their inbox. Remembering the last project keeps the chrome
+   * stable while they step out of a project and back into it.
+   */
+  const [lastProjectId, setLastProjectId] = useState<string | undefined>(projectId);
+
+  useEffect(() => {
+    if (projectId) setLastProjectId(projectId);
+  }, [projectId]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -96,7 +109,10 @@ export function PortalShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const activeProject = dashboard.data?.projects.find((p) => p.id === projectId);
+  const projects = dashboard.data?.projects ?? [];
+  // Fall back to the remembered project, then to the only one they have.
+  const navProjectId = projectId ?? lastProjectId ?? (projects.length === 1 ? projects[0].id : undefined);
+  const activeProject = projects.find((p) => p.id === navProjectId);
   const studio = dashboard.data?.studio;
   const hasSingleProject = dashboard.data?.projects.length === 1;
 
@@ -111,19 +127,22 @@ export function PortalShell({ children }: { children: ReactNode }) {
   };
 
   const isActive = (segment: string) => {
+    // Deliberately `projectId`, not `navProjectId`: on a global page nothing in
+    // the project nav is the current page, and highlighting Overview there
+    // would be a lie.
     if (!projectId) return false;
     const base = `/portal/projects/${projectId}`;
     return segment === '' ? pathname === base : pathname.startsWith(`${base}/${segment}`);
   };
 
   const nav = (collapsed: boolean) =>
-    projectId ? (
+    navProjectId ? (
       <nav className="space-y-0.5">
         {PROJECT_NAV.map((item) => {
           const active = isActive(item.segment);
           const link = (
             <Link
-              href={`/portal/projects/${projectId}${item.segment ? `/${item.segment}` : ''}`}
+              href={`/portal/projects/${navProjectId}${item.segment ? `/${item.segment}` : ''}`}
               onClick={() => setMobileOpen(false)}
               aria-current={active ? 'page' : undefined}
               className={cn(
@@ -193,6 +212,26 @@ export function PortalShell({ children }: { children: ReactNode }) {
     );
   };
 
+  const servicesLink = (collapsed: boolean) => {
+    const active = pathname.startsWith('/portal/services');
+    const link = (
+      <Link
+        href="/portal/services"
+        onClick={() => setMobileOpen(false)}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+          collapsed && 'justify-center px-0',
+          active ? 'bg-primary-muted text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+        )}
+      >
+        <ShoppingBag className="size-4 shrink-0" />
+        {!collapsed && <span className="flex-1 truncate">Services</span>}
+      </Link>
+    );
+    return collapsed ? <Tooltip content="Services" side="right">{link}</Tooltip> : link;
+  };
+
   const sidebar = (collapsed: boolean) => (
     <TooltipProvider>
       <div className="flex h-full flex-col">
@@ -251,6 +290,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
             })()}
 
           {!activeProject && messagesLink(collapsed)}
+          {!activeProject && servicesLink(collapsed)}
 
           {activeProject && (
             <>
@@ -271,6 +311,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
                   project — a client with two projects still has one inbox — so
                   it sits above the divider rather than among the sections. */}
               {messagesLink(collapsed)}
+              {servicesLink(collapsed)}
               <div className={cn('my-2 h-px bg-border', collapsed && 'mx-1')} />
               {nav(collapsed)}
             </>

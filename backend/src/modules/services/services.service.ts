@@ -18,6 +18,7 @@ const serviceInclude = {
     orderBy: { sortOrder: 'asc' },
     include: planInclude,
   },
+  slabs: { orderBy: { minAmount: 'asc' } },
 } satisfies Prisma.ServiceInclude;
 
 type ServiceRow = Prisma.ServiceGetPayload<{ include: typeof serviceInclude }>;
@@ -87,14 +88,32 @@ const shapeService = (service: ServiceRow) => {
     startingPrice:
       service.pricingModel === PricingModel.TIERED
         ? cheapest
-        : service.startingPrice
-          ? toNumber(service.startingPrice)
-          : null,
+        : service.pricingModel === PricingModel.SLAB
+          // The keenest rate across the bands — what the card should advertise.
+          ? service.slabs.reduce<number | null>(
+              (min, slab) => {
+                const rate = toNumber(slab.unitPrice);
+                return min === null || rate < min ? rate : min;
+              },
+              null,
+            )
+          : service.startingPrice
+            ? toNumber(service.startingPrice)
+            : null,
     isActive: service.isActive,
     isFeatured: service.isFeatured,
     isPublic: service.isPublic,
     sortOrder: service.sortOrder,
+    minOrderAmount: service.minOrderAmount ? toNumber(service.minOrderAmount) : null,
+    unitLabel: service.unitLabel,
+    priceNote: service.priceNote,
     plans,
+    slabs: service.slabs.map((slab) => ({
+      minAmount: toNumber(slab.minAmount),
+      maxAmount: slab.maxAmount ? toNumber(slab.maxAmount) : null,
+      unitPrice: toNumber(slab.unitPrice),
+      validityLabel: slab.validityLabel,
+    })),
   };
 };
 

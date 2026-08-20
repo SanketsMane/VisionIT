@@ -88,6 +88,14 @@ export const queryKeys = {
     quotes: (params: unknown) => ['services', 'quotes', params] as const,
     quote: (id: string) => ['services', 'quote', id] as const,
     coupons: ['services', 'coupons'] as const,
+    catalog: ['services', 'catalog'] as const,
+    catalogItem: (slug: string) => ['services', 'catalog', slug] as const,
+    paymentDetails: ['services', 'payment-details'] as const,
+    myOrders: ['services', 'my-orders'] as const,
+    myOrder: (id: string) => ['services', 'my-order', id] as const,
+    orders: (status: unknown) => ['services', 'orders', status] as const,
+    order: (id: string) => ['services', 'order', id] as const,
+    orderMessages: (id: string) => ['services', 'order-messages', id] as const,
   },
 
   chat: {

@@ -36,6 +36,13 @@ type SeedPlan = {
   prices: SeedPrice[];
 };
 
+type SeedSlab = {
+  minAmount: number;
+  maxAmount?: number;
+  unitPrice: number;
+  validityLabel: string;
+};
+
 type SeedService = {
   slug: string;
   name: string;
@@ -50,7 +57,11 @@ type SeedService = {
   startingPrice?: number;
   priceSuffix?: string;
   isFeatured?: boolean;
+  minOrderAmount?: number;
+  unitLabel?: string;
+  priceNote?: string;
   plans?: SeedPlan[];
+  slabs?: SeedSlab[];
 };
 
 /** Hostinger's published KVM rates: [24-month, renewal, was]. */
@@ -229,6 +240,226 @@ export const SEED_SERVICES: SeedService[] = [
       'Sized to your workload',
     ],
   },
+  // ── Trading ───────────────────────────────────────────────────────────────
+  {
+    slug: 'trading-broker-platform',
+    name: 'Trading Broker Platform Development',
+    tagline: 'Brokerage platforms with order management and risk controls',
+    description:
+      'End-to-end broker platforms: client onboarding and KYC, order management, market data, margin and risk controls, back-office reporting and settlement. Built to the compliance requirements of the exchange you are dealing with.',
+    category: ServiceCategory.TRADING_PLATFORM,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'CandlestickChart',
+    accentColor: '#0EA5E9',
+    isFeatured: true,
+    features: [
+      'Client onboarding and KYC',
+      'Order management and execution',
+      'Live market data integration',
+      'Margin, exposure and risk limits',
+      'Back office, reporting and settlement',
+    ],
+  },
+  {
+    slug: 'trading-algo-development',
+    name: 'Trading Algo Development',
+    tagline: 'Strategies coded, backtested and taken live',
+    description:
+      'Automated trading strategies built from your rules — backtested against historical data, forward-tested on paper, and deployed with the position sizing and kill switches that keep a bad day from becoming a bad month.',
+    category: ServiceCategory.ALGO_TRADING,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'Bot',
+    accentColor: '#6366F1',
+    features: [
+      'Strategy coded from your rules',
+      'Backtesting with real historical data',
+      'Paper trading before any capital moves',
+      'Position sizing and risk limits',
+      'Broker API integration and live deployment',
+    ],
+  },
+  {
+    slug: 'pine-script-development',
+    name: 'Pine Script Development',
+    tagline: 'TradingView indicators and strategies',
+    description:
+      'Custom Pine Script indicators, screeners and strategies for TradingView — including alerts, multi-timeframe logic and strategy backtests you can actually read.',
+    category: ServiceCategory.ALGO_TRADING,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'LineChart',
+    accentColor: '#22C55E',
+    features: [
+      'Custom indicators and overlays',
+      'Screeners and multi-timeframe logic',
+      'Strategy scripts with backtest reports',
+      'Alerts and webhook automation',
+      'Pine v5, commented so you can maintain it',
+    ],
+  },
+  {
+    slug: 'mt5-ea-development',
+    name: 'MT5 EA Development',
+    tagline: 'Expert Advisors for MetaTrader 5',
+    description:
+      'Expert Advisors and custom indicators for MetaTrader 5, written in MQL5 — with strategy tester results, money management and the safeguards that stop an EA running away with an account.',
+    category: ServiceCategory.ALGO_TRADING,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'Activity',
+    accentColor: '#F59E0B',
+    features: [
+      'MQL5 Expert Advisors and indicators',
+      'Strategy tester optimisation reports',
+      'Money management and drawdown limits',
+      'News and session filters',
+      'Source code handed over',
+    ],
+  },
+  {
+    slug: 'copy-trading-system',
+    name: 'Copy Trading System Development',
+    tagline: 'Mirror a master account across followers',
+    description:
+      'Copy and social trading platforms — master and follower accounts, proportional allocation, latency-aware replication, per-follower risk caps and the reporting both sides expect.',
+    category: ServiceCategory.TRADING_PLATFORM,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'Copy',
+    accentColor: '#8B5CF6',
+    features: [
+      'Master and follower account linking',
+      'Proportional and fixed-lot allocation',
+      'Per-follower risk caps',
+      'Performance and fee reporting',
+      'Multi-broker support',
+    ],
+  },
+
+  // ── Vision AI ─────────────────────────────────────────────────────────────
+  {
+    slug: 'ai-support-chat-agent',
+    name: 'AI Support Chat Agent',
+    tagline: 'An agent that answers from your own documentation',
+    description:
+      'A support agent grounded in your own help centre, product docs and past tickets — so it answers from what you have actually written, hands off to a person when it is unsure, and never invents a policy.',
+    category: ServiceCategory.AI_AGENT,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'MessagesSquare',
+    accentColor: '#8B5CF6',
+    isFeatured: true,
+    features: [
+      'Answers grounded in your own content',
+      'Handover to a human when confidence is low',
+      'Website, WhatsApp and in-app widgets',
+      'Conversation analytics and gap reports',
+      'Guardrails so it will not invent policy',
+    ],
+  },
+  {
+    slug: 'ai-calling-agent',
+    name: 'AI Calling Agent',
+    tagline: 'Voice agents that qualify, book and follow up',
+    description:
+      'Voice agents for inbound and outbound calls — qualifying leads, booking appointments and chasing follow-ups, with call recordings, transcripts and a clean handover to a person when it matters.',
+    category: ServiceCategory.AI_AGENT,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'PhoneCall',
+    accentColor: '#EC4899',
+    features: [
+      'Inbound and outbound calling',
+      'Lead qualification and appointment booking',
+      'Recordings and searchable transcripts',
+      'Warm transfer to a human',
+      'CRM sync',
+    ],
+  },
+  {
+    slug: 'business-automation',
+    name: 'Business Automation',
+    tagline: 'Take the repetitive work off your team',
+    description:
+      'Automating the work nobody should be doing by hand — document processing, data entry between systems, approvals, reporting and the integrations that make them talk to each other.',
+    category: ServiceCategory.AUTOMATION,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'Workflow',
+    accentColor: '#0EA5E9',
+    features: [
+      'Document extraction and classification',
+      'System-to-system integrations',
+      'Approval flows and notifications',
+      'Scheduled reporting',
+      'Audit trail on every automated action',
+    ],
+  },
+  {
+    slug: 'ai-image-generation',
+    name: 'AI Image Generation',
+    tagline: 'On-brand imagery at the volume you need',
+    description:
+      'Image generation built into your workflow — product shots, campaign creative and catalogue imagery, tuned to your brand and delivered through an interface your team can actually use.',
+    category: ServiceCategory.MEDIA_GENERATION,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'ImagePlus',
+    accentColor: '#F97316',
+    features: [
+      'Brand-consistent output',
+      'Bulk and catalogue generation',
+      'Background removal and variants',
+      'Review and approval before publishing',
+      'API or dashboard, whichever suits',
+    ],
+  },
+  {
+    slug: 'ai-video-generation',
+    name: 'AI Video Generation',
+    tagline: 'Short-form video without a production crew',
+    description:
+      'Automated video production for ads, product explainers and social — script to voiceover to captioned cut, in the formats each platform expects.',
+    category: ServiceCategory.MEDIA_GENERATION,
+    pricingModel: PricingModel.QUOTE_ONLY,
+    icon: 'Clapperboard',
+    accentColor: '#D946EF',
+    features: [
+      'Script to finished cut',
+      'Voiceover and auto-captions',
+      'Formats sized per platform',
+      'Brand templates and lower thirds',
+      'Bulk generation from a product feed',
+    ],
+  },
+
+  // ── Messaging ─────────────────────────────────────────────────────────────
+  {
+    slug: 'bulk-sms',
+    name: 'Bulk SMS Service',
+    tagline: 'Transactional and promotional SMS, no DLT registration',
+    description:
+      'SMS credits for transactional and promotional messaging across India. Credits never expire inside their validity, the rate improves the more you buy, and there is no DLT registration to get through first.',
+    category: ServiceCategory.SMS_SERVICE,
+    pricingModel: PricingModel.SLAB,
+    icon: 'MessageSquareText',
+    accentColor: '#10B981',
+    isFeatured: true,
+    minOrderAmount: 1000,
+    unitLabel: 'SMS',
+    priceSuffix: '/SMS',
+    priceNote: 'No DLT registration required',
+    features: [
+      'No DLT registration required',
+      'Transactional and promotional routes',
+      'Delivery reports on every message',
+      'API and dashboard sending',
+      'Credits valid for years, not months',
+    ],
+    // Bands as published. The first starts at ₹250, but the minimum top-up is
+    // ₹1,000 — both are enforced, so ₹250-999 is quoted as below the minimum.
+    slabs: [
+      { minAmount: 250, maxAmount: 2999, unitPrice: 0.85, validityLabel: '8 years' },
+      { minAmount: 3000, maxAmount: 7999, unitPrice: 0.70, validityLabel: '5 years' },
+      { minAmount: 8000, maxAmount: 14999, unitPrice: 0.65, validityLabel: '4 years' },
+      { minAmount: 15000, maxAmount: 69999, unitPrice: 0.45, validityLabel: '3 years' },
+      { minAmount: 70000, unitPrice: 0.30, validityLabel: '1 year' },
+    ],
+  },
+
   {
     slug: 'social-media-management',
     name: 'Social Media Management',
@@ -324,7 +555,7 @@ export const seedServices = async (tx: PrismaClient | Prisma.TransactionClient, 
   let updated = 0;
 
   for (const [index, definition] of SEED_SERVICES.entries()) {
-    const { plans, ...fields } = definition;
+    const { plans, slabs: _slabs, ...fields } = definition;
     const existing = await tx.service.findFirst({ where: { userId, slug: definition.slug } });
 
     const data = {
@@ -332,6 +563,7 @@ export const seedServices = async (tx: PrismaClient | Prisma.TransactionClient, 
       sortOrder: index,
       userId,
       startingPrice: fields.startingPrice ?? null,
+      minOrderAmount: fields.minOrderAmount ?? null,
     };
 
     const service = existing
@@ -339,6 +571,23 @@ export const seedServices = async (tx: PrismaClient | Prisma.TransactionClient, 
       : await tx.service.create({ data });
 
     existing ? (updated += 1) : (created += 1);
+
+    // Replaced wholesale, like plans: a band that moved should not linger.
+    await tx.servicePriceSlab.deleteMany({ where: { serviceId: service.id } });
+    if (definition.slabs) {
+      for (const [slabIndex, slab] of definition.slabs.entries()) {
+        await tx.servicePriceSlab.create({
+          data: {
+            serviceId: service.id,
+            minAmount: slab.minAmount,
+            maxAmount: slab.maxAmount ?? null,
+            unitPrice: slab.unitPrice,
+            validityLabel: slab.validityLabel,
+            sortOrder: slabIndex,
+          },
+        });
+      }
+    }
 
     if (plans) {
       // Replaced wholesale so a renamed or dropped tier cannot linger.

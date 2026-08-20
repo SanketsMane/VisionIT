@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Boxes, Inbox, MessageSquareQuote, Tag, TrendingUp,
+  Boxes, Inbox, MessageSquareQuote, PackageCheck, Tag, TrendingUp,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,13 @@ export default function ServicesPage() {
 
   const items = services.data ?? [];
   const tiered = useMemo(() => items.filter((s) => s.plans.length > 0), [items]);
-  const flat = useMemo(() => items.filter((s) => s.plans.length === 0), [items]);
+  // Slab services price by volume, so "from ₹0.3" tells the reader nothing.
+  // They get the full band table instead.
+  const slabbed = useMemo(() => items.filter((s) => s.pricingModel === 'SLAB' && s.slabs.length > 0), [items]);
+  const flat = useMemo(
+    () => items.filter((s) => s.plans.length === 0 && !(s.pricingModel === 'SLAB' && s.slabs.length > 0)),
+    [items],
+  );
 
   const openQuote = (service: Service, plan?: ServicePlan, termMonths?: number, coupon?: AppliedCoupon | null) => {
     setTarget({ service, plan, termMonths, coupon });
@@ -59,9 +65,14 @@ export default function ServicesPage() {
         title="Services"
         description="What you sell, what it costs, and the enquiries it brings in."
         actions={
-          <Button asChild variant="outline">
-            <Link href="/services/quotes"><Inbox /> Enquiries</Link>
-          </Button>
+          <>
+            <Button asChild variant="outline">
+              <Link href="/services/orders"><PackageCheck /> Orders</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/services/quotes"><Inbox /> Enquiries</Link>
+            </Button>
+          </>
         }
       />
 
@@ -156,6 +167,84 @@ export default function ServicesPage() {
           ))}
 
           {/* ── Everything else ──────────────────────────────────────── */}
+          {slabbed.map((service) => (
+            <div key={service.id}>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="grid size-7 place-items-center rounded-lg"
+                    style={{
+                      backgroundColor: `${service.accentColor ?? '#0076FF'}18`,
+                      color: service.accentColor ?? '#0076FF',
+                    }}
+                  >
+                    <ServiceIcon name={service.icon} className="size-3.5" />
+                  </span>
+                  <h2 className="text-sm font-semibold">{service.name}</h2>
+                  {!service.isActive && <Badge variant="default" size="sm">Inactive</Badge>}
+                </div>
+                {service.minOrderAmount !== null && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Minimum top-up {rupees(service.minOrderAmount)}
+                  </span>
+                )}
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-left text-muted-foreground">
+                          <th className="px-4 py-2.5 font-medium">Top-up</th>
+                          <th className="px-4 py-2.5 text-right font-medium">
+                            Rate per {service.unitLabel ?? 'unit'}
+                          </th>
+                          <th className="px-4 py-2.5 text-right font-medium">Validity</th>
+                          <th className="px-4 py-2.5 text-right font-medium">
+                            {service.unitLabel ? `${service.unitLabel}s at the band floor` : 'Units at the band floor'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...service.slabs]
+                          .sort((a, b) => a.minAmount - b.minAmount)
+                          .map((slab) => {
+                            // A band may open below the minimum top-up. Quote the
+                            // floor a buyer can actually reach, not the rate card's.
+                            const floor = Math.max(slab.minAmount, service.minOrderAmount ?? 0);
+                            return (
+                            <tr key={slab.minAmount} className="border-b border-border last:border-0">
+                              <td className="px-4 py-2.5 font-medium">
+                                {slab.maxAmount === null
+                                  ? `${rupees(floor)} and above`
+                                  : `${rupees(floor)} – ${rupees(slab.maxAmount)}`}
+                              </td>
+                              <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
+                                ₹{slab.unitPrice.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-2.5 text-right text-muted-foreground">
+                                {slab.validityLabel ?? '—'}
+                              </td>
+                              <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
+                                {Math.floor(floor / slab.unitPrice).toLocaleString('en-IN')}
+                              </td>
+                            </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {service.priceNote && (
+                    <p className="border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
+                      {service.priceNote}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+
           <div>
             <h2 className="mb-3 text-sm font-semibold">Services &amp; retainers</h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

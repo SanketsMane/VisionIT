@@ -100,6 +100,13 @@ export const uploadProjectDocument = multer({
   fileFilter: makeFilter([...DOC_TYPES, ...IMAGE_TYPES, ...ARCHIVE_TYPES]),
 });
 
+/** Proof of payment on a service order — a screenshot or a bank PDF. */
+export const uploadOrderProof = multer({
+  storage: makeStorage('order-proofs'),
+  limits: { fileSize: env.maxUploadBytes },
+  fileFilter: makeFilter([...IMAGE_TYPES, 'application/pdf']),
+});
+
 /**
  * Chat attachments.
  *

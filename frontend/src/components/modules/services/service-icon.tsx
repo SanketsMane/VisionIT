@@ -1,8 +1,10 @@
 'use client';
 
 import {
-  Boxes, Globe, Landmark, Megaphone, MonitorCog, Server, Share2,
-  Smartphone, Sparkles, Target, TrendingUp, type LucideIcon,
+  Activity, Bot, Boxes, CandlestickChart, Clapperboard, Copy, Globe, ImagePlus,
+  Landmark, LineChart, Megaphone, MessageSquareText, MessagesSquare, MonitorCog,
+  PhoneCall, Server, Share2, Smartphone, Sparkles, Target, TrendingUp, Workflow,
+  type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -26,6 +28,17 @@ const ICONS: Record<string, LucideIcon> = {
   Megaphone,
   TrendingUp,
   Target,
+  CandlestickChart,
+  Bot,
+  LineChart,
+  Activity,
+  Copy,
+  MessagesSquare,
+  PhoneCall,
+  Workflow,
+  ImagePlus,
+  Clapperboard,
+  MessageSquareText,
 };
 
 export function ServiceIcon({ name, className }: { name: string | null; className?: string }) {
