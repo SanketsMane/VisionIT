@@ -151,6 +151,48 @@ export function PortalShell({ children }: { children: ReactNode }) {
       </nav>
     ) : null;
 
+  const messagesLink = (collapsed: boolean) => {
+    const active = pathname.startsWith('/portal/chat');
+    const link = (
+      <Link
+        href="/portal/chat"
+        onClick={() => setMobileOpen(false)}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+          collapsed && 'justify-center px-0',
+          active
+            ? 'bg-primary-muted text-primary'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+        )}
+      >
+        <span className="relative flex shrink-0">
+          <MessageSquare className="size-4" />
+          {/* Collapsed, the row has no room for a count, so the icon carries a
+              small dot instead of a number that would overflow the rail. */}
+          {collapsed && unread > 0 && (
+            <span className="absolute -right-1 -top-1 size-2 rounded-full bg-danger ring-2 ring-card" />
+          )}
+        </span>
+        {!collapsed && (
+          <>
+            <span className="flex-1 truncate">Messages</span>
+            {unread > 0 && (
+              <span className="grid min-w-[18px] shrink-0 place-items-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-danger-foreground">
+                {unread > 99 ? '99+' : unread}
+              </span>
+            )}
+          </>
+        )}
+      </Link>
+    );
+    return collapsed ? (
+      <Tooltip content={unread > 0 ? `Messages (${unread})` : 'Messages'} side="right">{link}</Tooltip>
+    ) : (
+      link
+    );
+  };
+
   const sidebar = (collapsed: boolean) => (
     <TooltipProvider>
       <div className="flex h-full flex-col">
@@ -179,37 +221,6 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className={cn('flex-1 overflow-y-auto scrollbar-slim py-3', collapsed ? 'px-2' : 'px-3')}>
-          {/* Messages sit above the project nav because they are not scoped to one
-              project — a client with two projects has one inbox. */}
-          {(() => {
-            const active = pathname.startsWith('/portal/chat');
-            const link = (
-              <Link
-                href="/portal/chat"
-                onClick={() => setMobileOpen(false)}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-                  collapsed && 'justify-center px-0',
-                  active
-                    ? 'bg-primary-muted text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                )}
-              >
-                <span className="relative">
-                  <MessageSquare className="size-4 shrink-0" />
-                  {unread > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 grid min-w-[15px] place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-danger-foreground">
-                      {unread > 9 ? '9+' : unread}
-                    </span>
-                  )}
-                </span>
-                {!collapsed && <span className="flex-1">Messages</span>}
-              </Link>
-            );
-            return collapsed ? <Tooltip content="Messages" side="right">{link}</Tooltip> : link;
-          })()}
-
         {/* Hidden for a single-project client: /portal redirects straight back
               to their project, so the link would look broken. */}
           {!hasSingleProject &&
@@ -239,6 +250,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
               );
             })()}
 
+          {!activeProject && messagesLink(collapsed)}
+
           {activeProject && (
             <>
               {/* The project card is all text, so it has nothing to show in a
@@ -254,6 +267,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
                   <Badge variant="primary" size="sm" className="mt-1.5">{activeProject.roleLabel}</Badge>
                 </div>
               )}
+              {/* Messages is the only item here that is not scoped to the
+                  project — a client with two projects still has one inbox — so
+                  it sits above the divider rather than among the sections. */}
+              {messagesLink(collapsed)}
+              <div className={cn('my-2 h-px bg-border', collapsed && 'mx-1')} />
               {nav(collapsed)}
             </>
           )}
