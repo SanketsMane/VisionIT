@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { prisma } from '@config/database';
-import { seedCatalog } from './catalog';
+import { CATALOG, seedCatalog } from './catalog';
 
 /**
  * Writes the catalog of shipped work the website shows.
@@ -30,6 +30,31 @@ const run = async (): Promise<void> => {
   console.log(
     `    ${result.created} created, ${result.refreshed} refreshed, ${result.rewritten} rewritten`,
   );
+
+  /**
+   * Confirm every declared entry actually landed.
+   *
+   * The counters above report what the loop *did*, not what the database
+   * *has*, and those have disagreed twice — a create was counted but the row
+   * was not there afterwards, and nothing failed loudly. Reading the slugs
+   * back is the only claim worth making, so a silent drop now exits non-zero
+   * instead of being discovered later by counting cards on the website.
+   */
+  const stored = await prisma.portfolioItem.findMany({
+    where: { ownerId: owner.id },
+    select: { slug: true },
+  });
+  const have = new Set(stored.map((row) => row.slug));
+  const missing = CATALOG.filter((entry) => !have.has(entry.slug)).map((entry) => entry.slug);
+
+  if (missing.length) {
+    console.error(`\n  ${missing.length} declared entr(ies) did not persist:`);
+    for (const slug of missing) console.error(`    - ${slug}`);
+    console.error('  Re-run the seed. If it recurs, the database write is failing silently.\n');
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+  console.log(`    all ${CATALOG.length} declared entries verified in the database`);
 
   const published = await prisma.portfolioItem.count({
     where: { ownerId: owner.id, isPublished: true },
